@@ -1,0 +1,43 @@
+### Python ###
+.venv/
+__pycache__/
+*.egg-info/
+.pytest_cache/
+build/
+dist/
+
+### 3D source model (CC BY 4.0, download it from Sketchfab; see README) ###
+*.glb
+
+### Xcode / Swift ###
+# User settings
+xcuserdata/
+
+# Build output
+DerivedData/
+.build/
+*.hmap
+*.moved-aside
+
+# App packaging
+*.ipa
+*.dSYM.zip
+*.dSYM
+
+# Playgrounds
+timeline.xctimeline
+playground.xcworkspace
+
+# Keep only the shareable parts of the .xcodeproj
+*.xcodeproj/*
+!*.xcodeproj/project.pbxproj
+!*.xcodeproj/xcshareddata/
+!*.xcodeproj/project.xcworkspace/
+!*.xcworkspace/contents.xcworkspacedata
+**/xcshareddata/WorkspaceSettings.xcsettings
+
+### Personal signing settings (copy xcode/Config/Local.xcconfig.template) ###
+Local.xcconfig
+
+### macOS ###
+.DS_Store

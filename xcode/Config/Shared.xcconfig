@@ -1,0 +1,12 @@
+// Settings every developer shares. Don't put personal values here: copy
+// Local.xcconfig.template to Local.xcconfig (ignored by git) and fill that in.
+
+// Your Apple Developer team ID (Xcode > Settings > Accounts, or developer.apple.com > Membership).
+DEVELOPMENT_TEAM =
+
+// Bundle IDs are "<prefix>.Wristscope" for the phone app and "<prefix>.Wristscope.watchkitapp"
+// for the watch app. Use a prefix that is unique to you.
+BUNDLE_ID_PREFIX = com.example.wristscope
+
+// Last, so the values in it win over the defaults above.
+#include? "Local.xcconfig"
