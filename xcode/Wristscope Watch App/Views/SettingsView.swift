@@ -39,7 +39,7 @@ struct SettingsView: View {
 
             Section {
                 Picker("Reference Frame", selection: $referenceFrame) {
-                    ForEach(ReferenceFrame.allCases, id: \.self) { frame in
+                    ForEach(ReferenceFrame.available, id: \.self) { frame in
                         Text(frame.title).tag(frame)
                     }
                 }

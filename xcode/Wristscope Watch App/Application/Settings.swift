@@ -18,6 +18,11 @@ protocol AppStorageField: CaseIterable, RawRepresentable where RawValue == Strin
 
 extension AppStorageField {
     static var appStorageExplanation: String? { nil }
+
+    /// The value currently saved in `UserDefaults`, which is where `@AppStorage` keeps it.
+    static var current: Self {
+        UserDefaults.standard.string(forKey: appStorageKey).flatMap(Self.init(rawValue:)) ?? defaultValue
+    }
 }
 
 enum SessionType: String, AppStorageField {
@@ -101,6 +106,11 @@ extension SampleRate {
         }
     }
     
+    /// Seconds between samples, which is what `CMMotionManager` takes.
+    var updateInterval: TimeInterval {
+        1.0 / Double(hertz)
+    }
+
     var title: String {
         "\(hertz) Hz"
     }
@@ -136,22 +146,29 @@ extension ReferenceFrame {
         case .trueNorth: return "Heading is tied to true (geographic) north. Needs location."
         }
     }
-    
-    static func isEqual(lhs: Self, rhs: CMAttitudeReferenceFrame) -> Bool {
-        switch lhs {
-        case .arbitrary:
-            if rhs == .xArbitraryZVertical { return true }
-            else { return false }
-        case .arbitraryCorrected:
-            if rhs == .xArbitraryCorrectedZVertical { return true }
-            else { return false }
-        case .magneticNorth:
-            if rhs == .xMagneticNorthZVertical { return true }
-            else { return false }
-        case .trueNorth:
-            if rhs == .xTrueNorthZVertical { return true }
-            else { return false }
+
+    /// The Core Motion equivalent, which is what `startDeviceMotionUpdates(using:)` takes.
+    var cmFrame: CMAttitudeReferenceFrame {
+        switch self {
+        case .arbitrary: return .xArbitraryZVertical
+        case .arbitraryCorrected: return .xArbitraryCorrectedZVertical
+        case .magneticNorth: return .xMagneticNorthZVertical
+        case .trueNorth: return .xTrueNorthZVertical
         }
+    }
+
+    /// The frames this device can use and that the settings view offers. True north is left out
+    /// until the app asks for location permission.
+    static var available: [ReferenceFrame] {
+        let supported = CMMotionManager.availableAttitudeReferenceFrames()
+        return allCases.filter { $0 != .trueNorth && supported.contains($0.cmFrame) }
+    }
+
+    /// The saved frame, or the default if the saved one isn't available on this device.
+    static var currentAvailable: ReferenceFrame {
+        let saved = current
+        if available.contains(saved) { return saved }
+        return available.contains(defaultValue) ? defaultValue : (available.first ?? defaultValue)
     }
 }
 

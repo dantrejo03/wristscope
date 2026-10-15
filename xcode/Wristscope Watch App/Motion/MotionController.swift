@@ -16,12 +16,12 @@ extension Motion {
         nonisolated(unsafe) private let motionManager = CMMotionManager()
 
         private let buffer = SampleBuffer(connectivity: WatchConnectivityManager.shared)
+        
         /// CMMotionManager only delivers to an OperationQueue. This one runs its operations on
         /// `buffer.queue`, so the handlers can enter the buffer's isolation.
         private let handlerQueue = OperationQueue()
 
-        private let updateInterval: TimeInterval = 0.01     // 100 Hz
-        private let deviceMotionReferenceFrame: CMAttitudeReferenceFrame = .xArbitraryZVertical
+        private var updateInterval: TimeInterval { SampleRate.current.updateInterval }
 
         init() {
             handlerQueue.name = "com.wristscope.motion.handlers"
@@ -63,7 +63,7 @@ extension Motion {
             motionManager.deviceMotionUpdateInterval = updateInterval
             // The handlers are `@Sendable` so they aren't inferred @MainActor; they run on `buffer.queue`.
             motionManager.startDeviceMotionUpdates(
-                using: deviceMotionReferenceFrame, to: handlerQueue
+                using: ReferenceFrame.currentAvailable.cmFrame, to: handlerQueue
             ) { @Sendable [buffer] motion, error in
                 guard let motion else { return }
                 let sample = DeviceMotionSample(from: motion)
