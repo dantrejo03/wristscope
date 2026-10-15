@@ -9,25 +9,29 @@ import SwiftUI
 import CoreMotion
 
 
-protocol AppStorageField {
+protocol AppStorageField: CaseIterable, RawRepresentable where RawValue == String {
     static var appStorageKey: String { get }
-    static var appStorageExplanation: String? { get }
+    static var defaultValue: Self { get }
+    static var explanation: String? { get }
+    static var fieldTitle: String { get }
 }
 
 extension AppStorageField {
     static var appStorageExplanation: String? { nil }
 }
 
-enum SessionType: AppStorageField {
+enum SessionType: String, AppStorageField {
     case live
     case rep
     case workout
     
     static let appStorageKey: String = "sessionType"
-    static let appStorageExplanation: String? = nil
+    static let defaultValue = SessionType.live
+    static let explanation: String? = nil
+    static let fieldTitle: String = "Session"
 }
 
-enum SampleRate: AppStorageField {
+enum SampleRate: String, AppStorageField {
     case hz100
     case hz50
     case hz25
@@ -35,17 +39,21 @@ enum SampleRate: AppStorageField {
     case hz10
     
     static let appStorageKey: String = "sampleRate"
-    static let appStorageExplanation: String? = nil
+    static let defaultValue = SampleRate.hz100
+    static let explanation: String? = nil
+    static let fieldTitle: String = "Sample Rate"
 }
 
-enum ReferenceFrame: AppStorageField {
+enum ReferenceFrame: String, AppStorageField {
     case arbitrary
     case arbitraryCorrected
     case magneticNorth
     case trueNorth
     
     static let appStorageKey: String = "referenceFrame"
-    static let appStorageExplanation: String? = "The fixed direction that orientation is measured against."
+    static let defaultValue = ReferenceFrame.arbitrary
+    static let explanation: String? = "The fixed direction that orientation is measured against."
+    static let fieldTitle: String = "Reference Frame"
 }
 
 
