@@ -14,8 +14,8 @@ import logging
 from PySide6 import QtCore, QtNetwork
 
 from wristscope.core.samples import Sample
-from wristscope.sources import usbmux
-from wristscope.sources.wire import FrameSplitter, PayloadError, WireError, decode_records
+from wristscope.transport import usbmux
+from wristscope.transport.wire import FrameSplitter, PayloadError, WireError, decode_records
 
 log = logging.getLogger(__name__)
 

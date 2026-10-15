@@ -1,13 +1,13 @@
 //
-//  ContentView.swift
+//  AppView.swift
 //  Wristscope Watch App
 //
-//  Created by Daniel Trejo on 10/14/26.
+//  Created by Daniel Trejo on 10/15/26.
 //
 
 import SwiftUI
 
-struct ContentView: View {
+struct AppView: View {
     @Bindable var viewModel: ViewModel
 
     var body: some View {
@@ -55,5 +55,5 @@ struct ContentView: View {
 }
 
 #Preview {
-    ContentView(viewModel: ViewModel())
+    AppView(viewModel: ViewModel())
 }

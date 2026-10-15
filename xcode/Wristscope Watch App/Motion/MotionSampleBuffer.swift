@@ -30,13 +30,13 @@ extension Motion {
 
         private let flushInterval: DispatchTimeInterval = .milliseconds(100)
 
-        private var buffer = ContiguousArray<UInt8>()
+        private var storage = ContiguousArray<UInt8>()
         private var flushTimer: (any DispatchSourceTimer)?
 
         init(connectivity: WatchConnectivityManager) {
             self.connectivity = connectivity
             // Covers about 190ms of data
-            buffer.reserveCapacity(4096)
+            storage.reserveCapacity(4096)
         }
 
         deinit {
@@ -44,7 +44,7 @@ extension Motion {
         }
 
         func append(_ record: some WireEncodable) {
-            record.write(into: &buffer)
+            record.write(into: &storage)
         }
 
 
@@ -79,16 +79,16 @@ extension Motion {
         }
 
         private func flush() {
-            guard !buffer.isEmpty else { return }
+            guard !storage.isEmpty else { return }
             
             // Every frame carries the stream header (magic + version), so the receiver can
             // refuse a format it doesn't understand instead of plotting wrong numbers.
             var header = ContiguousArray<UInt8>()
             Format.writeStreamHeader(into: &header)
-            var message = Data(capacity: header.count + buffer.count)
+            var message = Data(capacity: header.count + storage.count)
             message.append(contentsOf: header)
-            message.append(contentsOf: buffer)
-            buffer.removeAll(keepingCapacity: true)
+            message.append(contentsOf: storage)
+            storage.removeAll(keepingCapacity: true)
             
             let _ = connectivity.sendFrame(message) { error in
                 AppLog.connectivity.error("Frame send failed: \(error.localizedDescription)")

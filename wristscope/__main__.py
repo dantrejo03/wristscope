@@ -6,7 +6,7 @@ import math
 import pyqtgraph as pg
 
 from wristscope.sources.receiver import PORT, WatchFeed
-from wristscope.sources.simulator import MOTIONS, Simulator
+from wristscope.feeds.simulator import MOTIONS, Simulator
 from wristscope.ui.window import ScopeWindow
 
 

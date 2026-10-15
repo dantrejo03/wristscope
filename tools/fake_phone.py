@@ -17,8 +17,8 @@ import random
 import socket
 import time
 
-from wristscope.sources.simulator import MOTIONS, Simulator
-from wristscope.sources.wire import encode_frame, encode_records
+from wristscope.feeds.simulator import MOTIONS, Simulator
+from wristscope.transport.wire import encode_frame, encode_records
 
 FRAME_INTERVAL = 0.1
 

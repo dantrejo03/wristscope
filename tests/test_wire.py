@@ -4,7 +4,7 @@ import pytest
 
 from wristscope.core.channels import Source, channels_for
 from wristscope.core.samples import Sample
-from wristscope.sources.wire import (
+from wristscope.transport.wire import (
     MAGIC,
     MAX_FRAME_BYTES,
     VERSION,

@@ -37,7 +37,7 @@
 /* Begin PBXFileReference section */
 		34D97BD1307F62A600088565 /* Wristscope.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Wristscope.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		34D97BDE307F62A800088565 /* Wristscope Watch App.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Wristscope Watch App.app"; sourceTree = BUILT_PRODUCTS_DIR; };
-		A7E1C0E0307F62B000088565 /* Shared.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Config/Shared.xcconfig; sourceTree = "<group>"; };
+		A7E1C0E0307F62B000088565 /* Config/Shared.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Config/Shared.xcconfig; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -97,7 +97,7 @@
 		34D97BC8307F62A600088565 = {
 			isa = PBXGroup;
 			children = (
-				A7E1C0E0307F62B000088565 /* Shared.xcconfig */,
+				A7E1C0E0307F62B000088565 /* Config/Shared.xcconfig */,
 				34D97BD3307F62A600088565 /* Wristscope */,
 				34D97BE2307F62A800088565 /* Wristscope Watch App */,
 				34D97BD2307F62A600088565 /* Products */,
@@ -245,7 +245,7 @@
 /* Begin XCBuildConfiguration section */
 		34D97BE9307F62A900088565 /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = A7E1C0E0307F62B000088565 /* Shared.xcconfig */;
+			baseConfigurationReference = A7E1C0E0307F62B000088565 /* Config/Shared.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
@@ -307,7 +307,7 @@
 		};
 		34D97BEA307F62A900088565 /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = A7E1C0E0307F62B000088565 /* Shared.xcconfig */;
+			baseConfigurationReference = A7E1C0E0307F62B000088565 /* Config/Shared.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;

@@ -6,7 +6,7 @@ import pytest
 from wristscope.core import quaternion as quat
 from wristscope.core.channels import Source
 from wristscope.core.samples import Sample
-from wristscope.sources.simulator import MOTIONS, Simulator, spin
+from wristscope.feeds.simulator import MOTIONS, Simulator, spin
 
 
 class FakeClock:

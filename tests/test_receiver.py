@@ -8,9 +8,10 @@ from PySide6 import QtCore, QtNetwork
 
 from wristscope.core.channels import Source
 from wristscope.core.samples import Sample
-from wristscope.sources import receiver, usbmux
+from wristscope.sources import receiver
 from wristscope.sources.receiver import WatchFeed
-from wristscope.sources.wire import encode_frame, encode_records
+from wristscope.transport.wire import encode_frame, encode_records
+from wristscope.transport import usbmux
 
 
 @pytest.fixture(scope="module")

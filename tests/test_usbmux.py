@@ -3,7 +3,7 @@ import struct
 
 import pytest
 
-from wristscope.sources import usbmux
+from wristscope.transport import usbmux
 
 
 def test_connect_request_round_trips_with_port_in_network_order():
