@@ -1,6 +1,6 @@
 import pytest
 
-from wristscope.watch_settings import Crown, WatchSettings, Wrist
+from wristscope.watch3d.watch_settings import Crown, WatchSettings, Wrist
 
 
 def test_defaults_match_the_watch():

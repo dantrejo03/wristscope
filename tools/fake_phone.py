@@ -1,9 +1,11 @@
 """A fake iPhone + watch for testing the desktop app without devices.
 
 Runs the simulator, encodes its samples the way the watch does, wraps them the
-way the phone does and sends a frame every 100 ms to the receiver.
+way the phone does and sends a frame every 100 ms. Like the phone app, it listens
+on port 9000 and the desktop app connects to it; run that with
+`wristscope --phone localhost`.
 
-    python tools/fake_phone.py                     # clean stream to localhost:9000
+    python tools/fake_phone.py                     # clean stream on localhost:9000
     python tools/fake_phone.py --lose-on-phone 0.1 # phone drops 10% of frames (sequence gaps)
     python tools/fake_phone.py --lose-on-watch 0.1 # watch drops 10% (only timestamp gaps show it)
     python tools/fake_phone.py --reorder 0.1       # swaps 10% of frames with the next one
@@ -15,8 +17,8 @@ import random
 import socket
 import time
 
-from wristscope.simulator import MOTIONS, Simulator
-from wristscope.wire import encode_frame, encode_records
+from wristscope.sources.simulator import MOTIONS, Simulator
+from wristscope.sources.wire import encode_frame, encode_records
 
 FRAME_INTERVAL = 0.1
 
@@ -28,16 +30,23 @@ def probability(text: str) -> float:
     return value
 
 
-def connect(host: str, port: int) -> socket.socket:
-    while True:
-        try:
-            sock = socket.create_connection((host, port), timeout=2)
-            sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
-            print(f"connected to {host}:{port}")
-            return sock
-        except OSError as error:
-            print(f"can't reach {host}:{port} ({error}), retrying")
-            time.sleep(1)
+def listen(host: str, port: int) -> socket.socket:
+    server = socket.create_server((host, port))
+    server.setblocking(False)  # so checking for the receiver never stops the frames
+    print(f"listening on {host}:{port}")
+    return server
+
+
+def accept(server: socket.socket) -> socket.socket | None:
+    """The receiver's connection, if it has connected since the last check. The newest wins, as on the phone."""
+    try:
+        sock, address = server.accept()
+    except BlockingIOError:
+        return None
+    sock.setblocking(True)
+    sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
+    print(f"receiver connected from {address[0]}")
+    return sock
 
 
 def main() -> None:
@@ -56,7 +65,8 @@ def main() -> None:
         return Simulator(MOTIONS[args.motion], rate=args.rate, seed=random.randrange(1 << 30))
 
     watch = new_watch()
-    sock = connect(args.host, args.port)
+    server = listen(args.host, args.port)
+    sock: socket.socket | None = None
     seq = 0
     started = time.monotonic()
     held: bytes | None = None  # a frame being delayed past its successor
@@ -69,12 +79,18 @@ def main() -> None:
                 watch, seq, started, held = new_watch(), 0, time.monotonic(), None
                 print("restarted")
 
+            newest = accept(server)
+            if newest is not None:
+                if sock is not None:
+                    sock.close()
+                sock = newest
+
             samples = watch.poll()
             if not samples or random.random() < args.lose_on_watch:
                 continue  # the watch never sent it, so the phone never numbers it
             frame = encode_frame(encode_records(samples), seq, time.time())
             seq += 1
-            if random.random() < args.lose_on_phone:
+            if sock is None or random.random() < args.lose_on_phone:
                 continue  # the phone numbered it, then dropped it
             if held is not None:
                 out, held = [frame, held], None
@@ -88,9 +104,11 @@ def main() -> None:
             except OSError:
                 print("connection lost")
                 sock.close()
-                sock = connect(args.host, args.port)
+                sock = None
     except KeyboardInterrupt:
         pass
+    finally:
+        server.close()
 
 
 if __name__ == "__main__":

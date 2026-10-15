@@ -2,9 +2,9 @@ import math
 
 import pytest
 
-from wristscope.channels import Source, channels_for
-from wristscope.samples import Sample
-from wristscope.wire import (
+from wristscope.core.channels import Source, channels_for
+from wristscope.core.samples import Sample
+from wristscope.sources.wire import (
     MAGIC,
     MAX_FRAME_BYTES,
     VERSION,

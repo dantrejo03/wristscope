@@ -3,7 +3,7 @@ import math
 import numpy as np
 import pytest
 
-from wristscope import quaternion as quat
+from wristscope.core import quaternion as quat
 
 
 def test_rotate_quarter_turn_about_z():

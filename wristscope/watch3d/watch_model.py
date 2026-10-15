@@ -11,7 +11,7 @@ from importlib import resources
 
 import numpy as np
 
-from wristscope.watch_settings import WatchSettings
+from wristscope.watch3d.watch_settings import WatchSettings
 
 FACE_LIFT = 0.02  # how far the face's markings float above the glass, so they don't flicker against it
 
@@ -35,7 +35,7 @@ class Mesh:
 
 def load_watch() -> dict[str, Mesh]:
     """The watch's parts from the converted model: "case", "screen", "band" (the connectors) and "crown"."""
-    with resources.files("wristscope").joinpath("assets/watch.npz").open("rb") as file:
+    with resources.files("wristscope.watch3d").joinpath("assets/watch.npz").open("rb") as file:
         data = np.load(file)
         vertices, faces, parts, names = (data[key] for key in ("vertices", "faces", "parts", "part_names"))
     meshes = {}

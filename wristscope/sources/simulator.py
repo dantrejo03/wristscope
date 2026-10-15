@@ -11,9 +11,9 @@ from collections.abc import Callable
 
 import numpy as np
 
-from wristscope import quaternion as quat
-from wristscope.channels import Source
-from wristscope.samples import Sample
+from wristscope.core import quaternion as quat
+from wristscope.core.channels import Source
+from wristscope.core.samples import Sample
 
 Motion = Callable[[float], tuple[np.ndarray, np.ndarray]]
 

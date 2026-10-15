@@ -3,9 +3,9 @@ import math
 import numpy as np
 import pytest
 
-from wristscope import quaternion as quat
-from wristscope.calibration import CalibrationError, yaw_offset
-from wristscope.watch_settings import Crown, WatchSettings
+from wristscope.core import quaternion as quat
+from wristscope.watch3d.calibration import CalibrationError, yaw_offset
+from wristscope.watch3d.watch_settings import Crown, WatchSettings
 
 UP = [0.0, 0.0, 1.0]
 X = [1.0, 0.0, 0.0]

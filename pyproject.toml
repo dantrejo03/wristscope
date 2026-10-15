@@ -9,7 +9,7 @@ description = "Real-time oscilloscope for Apple Watch CoreMotion data"
 readme = "README.md"
 requires-python = ">=3.11"
 # pyqtgraph is pinned because watch_view.py uses its 0.14 shader interface.
-dependencies = ["numpy", "pyqtgraph>=0.14,<0.15", "PySide6", "PyOpenGL", "zeroconf"]
+dependencies = ["numpy", "pyqtgraph>=0.14,<0.15", "PySide6", "PyOpenGL"]
 
 [project.optional-dependencies]
 # trimesh is only needed to rerun tools/convert_watch_model.py.
@@ -20,3 +20,6 @@ wristscope = "wristscope.__main__:main"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["wristscope"]

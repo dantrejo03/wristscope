@@ -1,8 +1,8 @@
 import numpy as np
 import pytest
 
-from wristscope.watch_model import Mesh, axis_arrows, load_watch, watch_face
-from wristscope.watch_settings import Crown, WatchSettings, Wrist
+from wristscope.watch3d.watch_model import Mesh, axis_arrows, load_watch, watch_face
+from wristscope.watch3d.watch_settings import Crown, WatchSettings, Wrist
 
 EVERY_SETTING = [WatchSettings(wrist, crown) for wrist in Wrist for crown in Crown]
 

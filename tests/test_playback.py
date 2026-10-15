@@ -2,7 +2,7 @@ import math
 
 import pytest
 
-from wristscope.playback import HORIZON, MAX_SLEW, PlaybackClock
+from wristscope.core.playback import HORIZON, MAX_SLEW, PlaybackClock
 
 
 class FakeClock:

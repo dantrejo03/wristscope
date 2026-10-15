@@ -22,42 +22,19 @@ final class ViewModel {
         connectivity.framesReceived
     }
 
-    /// The streamer's latest report, such as "Streaming to …".
-    private(set) var computerStatus = ""
-
-    /// The computer's IP address, or empty to find it on the network with Bonjour.
-    private(set) var computerHost: String
+    /// The streamer's latest report, such as "Streaming to the computer".
+    private(set) var computerStatus = "Starting…"
 
     @ObservationIgnored private let streamer: MotionStreamer
 
     @ObservationIgnored private let connectivity: WatchConnectivityManager
 
-    private static let computerHostKey = "computerHost"
-
     init() {
         let streamer = MotionStreamer()
         self.streamer = streamer
         connectivity = WatchConnectivityManager(onFrame: { streamer.send($0) })
-        computerHost = UserDefaults.standard.string(forKey: Self.computerHostKey) ?? ""
         streamer.onStatus = { [weak self] in self?.computerStatus = $0 }
-        connectToComputer()
-    }
-
-    /// Remembers `host` and reconnects to it. An empty host finds the computer with Bonjour instead.
-    func connectToComputer(host: String) {
-        computerHost = host.trimmingCharacters(in: .whitespaces)
-        UserDefaults.standard.set(computerHost, forKey: Self.computerHostKey)
-        connectToComputer()
-    }
-
-    private func connectToComputer() {
-        if computerHost.isEmpty {
-            streamer.discover()
-        } else {
-            // The streamer only reports once the connection succeeds or fails.
-            computerStatus = "Connecting to \(computerHost)…"
-            streamer.connect(host: computerHost)
-        }
+        streamer.listen()
     }
 }
 

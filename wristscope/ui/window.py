@@ -6,12 +6,12 @@ import numpy as np
 import pyqtgraph as pg
 from pyqtgraph.Qt import QtCore, QtGui, QtWidgets
 
-from wristscope.channels import Channel, Source, channel_groups
-from wristscope.playback import PlaybackClock
-from wristscope.samples import Feed
-from wristscope.store import MotionStore
-from wristscope.style import AXIS_COLORS, DEFAULT_COLOR
-from wristscope.watch_view import WatchView
+from wristscope.core.channels import Channel, Source, channel_groups
+from wristscope.core.playback import PlaybackClock
+from wristscope.core.samples import Feed
+from wristscope.core.store import MotionStore
+from wristscope.ui.style import AXIS_COLORS, DEFAULT_COLOR
+from wristscope.watch3d.watch_view import WatchView
 
 QUATERNION = [f"motion.quaternion.{axis}" for axis in "wxyz"]
 # Plotted when the window opens; the rest can be ticked on in the sidebar.

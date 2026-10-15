@@ -1,9 +1,9 @@
 import numpy as np
 import pytest
 
-from wristscope.channels import Source
-from wristscope.samples import Sample
-from wristscope.store import MotionStore, SourceBuffer
+from wristscope.core.channels import Source
+from wristscope.core.samples import Sample
+from wristscope.core.store import MotionStore, SourceBuffer
 
 
 def gyro(t: float, x: float) -> Sample:

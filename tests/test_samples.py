@@ -1,7 +1,7 @@
 import pytest
 
-from wristscope.channels import Source
-from wristscope.samples import Sample
+from wristscope.core.channels import Source
+from wristscope.core.samples import Sample
 
 
 def test_partial_sample_is_allowed():

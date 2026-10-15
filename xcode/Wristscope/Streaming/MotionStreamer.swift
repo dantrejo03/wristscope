@@ -1,18 +1,21 @@
 //  MotionStreamer.swift
 //
-//  Forwards byte batches from the iPhone to a computer over TCP, byte-for-byte.
-//  Pair with the Wristscope desktop app (`wristscope`), which listens on port 9000.
+//  Forwards byte batches from the iPhone to a computer over USB, byte-for-byte.
+//  Pair with the Wristscope desktop app (`wristscope`), which connects to port 9000.
 //
 //  Usage:
 //      let streamer = MotionStreamer()
 //      streamer.onStatus = { print($0) }            // optional, called on the main thread
-//      streamer.discover()                          // find the receiver via Bonjour…
-//      // streamer.connect(host: "192.168.1.20")    // …or give its IP directly
+//      streamer.listen()                            // wait for the computer to connect
 //
 //      // wherever your ~100 ms batches arrive, on any thread:
 //      streamer.send(batch)                         // Data, [UInt8], or any UInt8 buffer
 //
 //      streamer.stop()
+//
+//  How the computer gets here: macOS's usbmuxd service carries a connection over the cable to
+//  this device, where it arrives on the loopback interface. So the listener only accepts loopback
+//  connections, and nothing on Wi-Fi can reach it. One computer at a time: the newest wins.
 //
 //  Wire format: one frame per send() call, integers big-endian.
 //      UInt32   payload length in bytes
@@ -20,69 +23,53 @@
 //               disconnected still use a number, so the receiver sees the gap)
 //      Float64  phone's Unix time when send() was called
 //      bytes    the payload, exactly as passed to send()
-//
-//  Info.plist:
-//      NSLocalNetworkUsageDescription   e.g. "Sends sensor data to your computer."
-//      NSBonjourServices                array containing "_motionstream._tcp" (needed for discover())
 
 import Foundation
 import Network
 
 nonisolated final class MotionStreamer: @unchecked Sendable {
 
-    static let serviceType = "_motionstream._tcp"
+    static let defaultPort: UInt16 = 9000
 
     /// Status messages for your UI, delivered on the main thread.
     var onStatus: (@MainActor (String) -> Void)?
-
-    private enum Mode { case fixed(NWEndpoint), bonjour }
 
     private let maxInFlight: Int
     private let queue = DispatchQueue(label: "MotionStreamer")
 
     // Touched only on `queue`.
-    private var mode: Mode?
-    private var generation = 0            // bumped on connect/discover/stop/retry to cancel stale retries
+    private var port: NWEndpoint.Port?    // nil when stopped
+    private var generation = 0            // bumped on listen/stop/retry to cancel stale retries
+    private var listener: NWListener?
     private var connection: NWConnection?
-    private var browser: NWBrowser?
     private var seq: UInt32 = 0
     private var inFlight = 0
 
-    /// - Parameter maxInFlight: batches allowed to wait on a slow network before new ones are
+    /// - Parameter maxInFlight: batches allowed to wait on a slow connection before new ones are
     ///   dropped instead of queued, so the stream stays live rather than falling further and
     ///   further behind. The receiver sees drops as a sequence gap. 5 ≈ 0.5 s of 100 ms batches.
     init(maxInFlight: Int = 5) {
         self.maxInFlight = max(1, maxInFlight)
     }
 
-    // MARK: - Connecting
+    // MARK: - Listening
 
-    /// Send to a fixed address (Wristscope prints its IP when it starts).
-    func connect(host: String, port: UInt16 = 9000) {
+    /// Wait for the computer to connect over USB. Keeps listening, so it reconnects when the
+    /// computer's app restarts or the cable comes back.
+    func listen(port: UInt16 = MotionStreamer.defaultPort) {
         guard let nwPort = NWEndpoint.Port(rawValue: port) else { return }
-        let endpoint = NWEndpoint.hostPort(host: NWEndpoint.Host(host), port: nwPort)
         queue.async {
             self.generation += 1
-            self.mode = .fixed(endpoint)
-            self.open(endpoint)
+            self.port = nwPort
+            self.startListener()
         }
     }
 
-    /// Find the Wristscope desktop app on the local network via Bonjour. Reconnects automatically,
-    /// including after the receiver restarts.
-    func discover() {
-        queue.async {
-            self.generation += 1
-            self.mode = .bonjour
-            self.browse()
-        }
-    }
-
-    /// Disconnect and stop reconnecting.
+    /// Disconnect and stop listening.
     func stop() {
         queue.async {
             self.generation += 1
-            self.mode = nil
+            self.port = nil
             self.closeAll()
             self.status("Stopped")
         }
@@ -105,7 +92,7 @@ nonisolated final class MotionStreamer: @unchecked Sendable {
         let thisSeq = seq
         seq &+= 1
 
-        // Not connected, or the network is backed up: drop this batch rather than build a backlog.
+        // Not connected, or the connection is backed up: drop this batch rather than build a backlog.
         guard let conn = connection, case .ready = conn.state, inFlight < maxInFlight else { return }
 
         var frame = Data(capacity: 16 + payload.count)
@@ -127,41 +114,54 @@ nonisolated final class MotionStreamer: @unchecked Sendable {
 
     // MARK: - Connection management (all on `queue`)
 
-    private func browse() {
+    private func startListener() {
         closeAll()
-        let browser = NWBrowser(for: .bonjour(type: Self.serviceType, domain: nil), using: .tcp)
-        browser.browseResultsChangedHandler = { [weak self, weak browser] results, _ in
-            guard let self, let browser, self.browser === browser, let found = results.first else { return }
-            self.open(found.endpoint)
-        }
-        browser.stateUpdateHandler = { [weak self] state in
-            if case .failed(let error) = state { self?.status("Discovery failed: \(error)") }
-        }
-        self.browser = browser
-        status("Looking for the receiver…")
-        browser.start(queue: queue)
-    }
+        guard let port else { return }
 
-    private func open(_ endpoint: NWEndpoint) {
-        closeAll()
         let tcp = NWProtocolTCP.Options()
         tcp.noDelay = true                // send each batch immediately, don't coalesce
-        tcp.connectionTimeout = 5
-        tcp.enableKeepalive = true        // notice a vanished computer within a few seconds
-        tcp.keepaliveIdle = 2
-        tcp.keepaliveInterval = 1
-        tcp.keepaliveCount = 3
+        let parameters = NWParameters(tls: nil, tcp: tcp)
+        parameters.requiredInterfaceType = .loopback
+        parameters.allowLocalEndpointReuse = true   // listen again right away after a restart
 
-        let conn = NWConnection(to: endpoint, using: NWParameters(tls: nil, tcp: tcp))
+        let listener: NWListener
+        do {
+            listener = try NWListener(using: parameters, on: port)
+        } catch {
+            status("Can't listen on port \(port) (\(error)), retrying…")
+            scheduleRelisten()
+            return
+        }
+        listener.newConnectionHandler = { [weak self, weak listener] conn in
+            guard let self, let listener, listener === self.listener else { conn.cancel(); return }
+            self.accept(conn)
+        }
+        listener.stateUpdateHandler = { [weak self, weak listener] state in
+            guard let self, let listener, listener === self.listener else { return }
+            switch state {
+            case .ready:
+                if self.connection == nil { self.status("Waiting for the computer…") }
+            case .failed(let error):
+                self.status("Stopped listening (\(error)), retrying…")
+                self.scheduleRelisten()
+            default:
+                break
+            }
+        }
+        self.listener = listener
+        listener.start(queue: queue)
+    }
+
+    private func accept(_ conn: NWConnection) {
+        dropConnection()
         conn.stateUpdateHandler = { [weak self, weak conn] state in
             guard let self, let conn, conn === self.connection else { return }
             switch state {
             case .ready:
-                self.status("Streaming to \(endpoint)")
+                self.status("Streaming to the computer")
                 self.watchForClose(conn)
-            case .waiting(let error), .failed(let error):
-                self.status("Can't reach the receiver (\(error)), retrying…")
-                self.scheduleReconnect()
+            case .waiting, .failed:
+                self.connectionEnded()
             default:
                 break
             }
@@ -175,32 +175,37 @@ nonisolated final class MotionStreamer: @unchecked Sendable {
         conn.receive(minimumIncompleteLength: 1, maximumLength: 1) { [weak self, weak conn] _, _, isComplete, error in
             guard let self, let conn, conn === self.connection else { return }
             if isComplete || error != nil {
-                self.status("Receiver disconnected, reconnecting…")
-                self.scheduleReconnect()
+                self.connectionEnded()
             } else {
                 self.watchForClose(conn)
             }
         }
     }
 
-    private func scheduleReconnect() {
+    /// The listener keeps running, so the computer can connect again.
+    private func connectionEnded() {
+        dropConnection()
+        status("Computer disconnected, waiting for it…")
+    }
+
+    private func scheduleRelisten() {
         closeAll()
         generation += 1
         let gen = generation
         queue.asyncAfter(deadline: .now() + 1) { [weak self] in
             guard let self, self.generation == gen else { return }
-            switch self.mode {
-            case .fixed(let endpoint): self.open(endpoint)
-            case .bonjour:             self.browse()       // re-browse in case the receiver's name changed
-            case nil:                  break
-            }
+            self.startListener()
         }
     }
 
-    private func closeAll() {
-        browser?.cancel(); browser = nil
+    private func dropConnection() {
         connection?.cancel(); connection = nil
         inFlight = 0
+    }
+
+    private func closeAll() {
+        listener?.cancel(); listener = nil
+        dropConnection()
     }
 
     private func status(_ message: String) {

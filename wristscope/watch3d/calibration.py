@@ -10,8 +10,8 @@ import math
 
 import numpy as np
 
-from wristscope import quaternion as quat
-from wristscope.watch_settings import WatchSettings
+from wristscope.core import quaternion as quat
+from wristscope.watch3d.watch_settings import WatchSettings
 
 # 12 o'clock must be within 60° of level: below that its compass direction is unreliable.
 MIN_LEVEL = math.cos(math.radians(60))
