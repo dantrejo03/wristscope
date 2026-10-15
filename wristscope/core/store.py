@@ -4,8 +4,8 @@ import math
 
 import numpy as np
 
-from wristscope.channels import CHANNELS, Source, channels_for
-from wristscope.samples import Sample
+from wristscope.core.channels import CHANNELS, Source, channels_for
+from wristscope.core.samples import Sample
 
 
 class SourceBuffer:

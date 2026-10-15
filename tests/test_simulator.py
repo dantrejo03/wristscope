@@ -3,10 +3,10 @@ import math
 import numpy as np
 import pytest
 
-from wristscope import quaternion as quat
-from wristscope.channels import Source
-from wristscope.samples import Sample
-from wristscope.simulator import MOTIONS, Simulator, spin
+from wristscope.core import quaternion as quat
+from wristscope.core.channels import Source
+from wristscope.core.samples import Sample
+from wristscope.sources.simulator import MOTIONS, Simulator, spin
 
 
 class FakeClock:

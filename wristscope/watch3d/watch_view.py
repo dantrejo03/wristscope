@@ -16,11 +16,11 @@ from pyqtgraph.opengl import shaders
 from pyqtgraph.opengl.GLGraphicsItem import GLGraphicsItem
 from pyqtgraph.Qt import QtCore, QtGui, QtWidgets
 
-from wristscope import quaternion as quat
-from wristscope.calibration import CalibrationError, yaw_offset
-from wristscope.style import AXIS_COLORS
-from wristscope.watch_model import Mesh, axis_arrows, load_watch, watch_face
-from wristscope.watch_settings import Crown, WatchSettings, Wrist
+from wristscope.core import quaternion as quat
+from wristscope.watch3d.calibration import CalibrationError, yaw_offset
+from wristscope.ui.style import AXIS_COLORS
+from wristscope.watch3d.watch_model import Mesh, axis_arrows, load_watch, watch_face
+from wristscope.watch3d.watch_settings import Crown, WatchSettings, Wrist
 
 AXIS_LENGTH = 8.0
 FLOOR_Z = -9.0

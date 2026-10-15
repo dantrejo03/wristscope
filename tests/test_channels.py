@@ -1,4 +1,4 @@
-from wristscope.channels import CHANNELS, FUNDAMENTAL_CHANNELS, Source, channels_for
+from wristscope.core.channels import CHANNELS, FUNDAMENTAL_CHANNELS, Source, channels_for
 
 
 def test_channel_ids_are_unique():

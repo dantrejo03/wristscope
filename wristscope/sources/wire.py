@@ -14,8 +14,8 @@ many doubles follow. That table and VERSION must match `Motion.Source`,
 import struct
 from dataclasses import dataclass
 
-from wristscope.channels import Source, channels_for
-from wristscope.samples import Sample
+from wristscope.core.channels import Source, channels_for
+from wristscope.core.samples import Sample
 
 MAGIC = b"WRSC"
 VERSION = 1

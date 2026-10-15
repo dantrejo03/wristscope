@@ -2,7 +2,7 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from typing import Protocol
 
-from wristscope.channels import CHANNELS, Source
+from wristscope.core.channels import CHANNELS, Source
 
 
 @dataclass(frozen=True)

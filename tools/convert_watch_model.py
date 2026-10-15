@@ -3,7 +3,7 @@
     .venv/bin/python tools/convert_watch_model.py tools/smart_watch_-_apple.glb
 
 Reads "Smart Watch - Apple" by James Gorman (Sketchfab, CC BY 4.0), downloaded as glTF
-Binary, prints what it contains, and writes src/wristscope/assets/watch.npz. Only this
+Binary, prints what it contains, and writes wristscope/watch3d/assets/watch.npz. Only this
 script needs trimesh; the app reads the .npz with numpy alone.
 
 CC BY asks that changes to the model be stated. This script makes these, in order:
@@ -41,7 +41,7 @@ SCREEN_OPENING = ((-0.0324, 0.0383), (-0.0463, 0.0470))
 # watch-frame point = TO_WATCH @ file point
 TO_WATCH = np.array([[-1.0, 0.0, 0.0], [0.0, 0.0, 1.0], [0.0, 1.0, 0.0]])
 CASE_HEIGHT = 4.5  # cm, 12 o'clock to 6 o'clock, like a 45 mm watch
-OUTPUT = Path(__file__).resolve().parent.parent / "src" / "wristscope" / "assets" / "watch.npz"
+OUTPUT = Path(__file__).resolve().parent.parent / "wristscope" / "watch3d" / "assets" / "watch.npz"
 
 
 def load_triangles(path: Path):

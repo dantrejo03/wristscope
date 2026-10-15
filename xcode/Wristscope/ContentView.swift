@@ -11,8 +11,6 @@ import UIKit
 struct ContentView: View {
     let viewModel: ViewModel
 
-    @State private var hostDraft = ""
-
     var body: some View {
         NavigationStack {
             Form {
@@ -22,23 +20,16 @@ struct ContentView: View {
                 }
 
                 Section {
-                    Label(viewModel.computerStatus, systemImage: "desktopcomputer")
-                    TextField("IP address", text: $hostDraft, prompt: Text("Find automatically"))
-                        .keyboardType(.numbersAndPunctuation)
-                        .textInputAutocapitalization(.never)
-                        .autocorrectionDisabled()
-                        .submitLabel(.go)
-                        .onSubmit { viewModel.connectToComputer(host: hostDraft) }
+                    Label(viewModel.computerStatus, systemImage: "cable.connector")
                 } header: {
                     Text("Computer")
                 } footer: {
-                    Text("Leave the address empty to find the computer on your network automatically. Otherwise enter its IP address; it should listen on port 9000.")
+                    Text("Plug this iPhone into the computer with a cable and run wristscope there. It connects on its own.")
                 }
             }
             .navigationTitle("Wristscope")
         }
         .onAppear {
-            hostDraft = viewModel.computerHost
             // iOS suspends the app when the phone locks, which ends the stream.
             UIApplication.shared.isIdleTimerDisabled = true
         }
