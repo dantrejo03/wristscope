@@ -13,7 +13,7 @@ struct WatchApp: App {
 
     var body: some Scene {
         WindowGroup {
-            AppView(viewModel: viewModel)
+            HomeView(viewModel: viewModel)
         }
     }
 }

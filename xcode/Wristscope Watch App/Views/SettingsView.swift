@@ -23,7 +23,7 @@ struct SettingsView: View {
                 }
                 detail(sessionType.description)
             } footer: {
-                explanation(SessionType.appStorageExplanation)
+                explanation(SessionType.explanation)
             }
 
             Section {
@@ -34,7 +34,7 @@ struct SettingsView: View {
                 }
                 detail(sampleRate.description)
             } footer: {
-                explanation(SampleRate.appStorageExplanation)
+                explanation(SampleRate.explanation)
             }
 
             Section {
@@ -45,7 +45,7 @@ struct SettingsView: View {
                 }
                 detail(referenceFrame.description)
             } footer: {
-                explanation(ReferenceFrame.appStorageExplanation)
+                explanation(ReferenceFrame.explanation)
             }
         }
         .navigationTitle("Settings")

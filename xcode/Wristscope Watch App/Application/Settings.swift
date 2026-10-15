@@ -17,7 +17,7 @@ protocol AppStorageField: CaseIterable, RawRepresentable where RawValue == Strin
 }
 
 extension AppStorageField {
-    static var appStorageExplanation: String? { nil }
+    static var explanation: String? { nil }
 
     /// The value currently saved in `UserDefaults`, which is where `@AppStorage` keeps it.
     static var current: Self {
