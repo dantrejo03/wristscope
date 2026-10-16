@@ -41,6 +41,7 @@ extension Workout.Session {
             case .prepared: continuation.yield(.prepared)
             case .running: continuation.yield(.running)
             case .paused: continuation.yield(.paused)
+            case .stopped: continuation.yield(.stopped(date))
             case .ended: continuation.yield(.ended(date))
             default: break
             }

@@ -16,7 +16,7 @@ struct RootView: View {
         case .countdown(_, let showLoading):
             CountdownView(showLoading: showLoading, onFinish: applicationStore.countdownEnded)
         case .active(let store): ActiveWorkoutView(store: store)
-        case .summary: EmptyView()
+        case .summary(let summary): WorkoutSummaryView(summary: summary, store: applicationStore)
         }
     }
 }

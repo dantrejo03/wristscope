@@ -52,7 +52,7 @@ extension SessionType {
     var wildcardTitle: String {
         switch self {
         case .live: return "Connection"
-        case .rep: return "Rep"
+        case .rep: return "Record Rep"
         case .workout: return "Mark Event"
         }
     }

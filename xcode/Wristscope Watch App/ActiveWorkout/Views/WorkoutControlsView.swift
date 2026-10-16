@@ -19,8 +19,8 @@ struct WorkoutControlsView: View {
                     store.end()
                 }
                 ControlButton(
-                    title: store.isPaused ? "Resume" : "Pause",
-                    symbol: store.isPaused ? "play.fill" : "pause.fill",
+                    title:  store.showPausedButton ? "Resume" : "Pause",
+                    symbol: store.showPausedButton ? "play.fill" : "pause.fill",
                     color: .yellow
                 ) {
                     store.togglePause()
@@ -39,6 +39,7 @@ struct WorkoutControlsView: View {
                 }
             }
         }
+        .sensoryFeedback(.success, trigger: store.markCount)
     }
 }
 
@@ -71,5 +72,5 @@ struct ControlButton: View {
 
 #Preview {
     let session = try! HKWorkoutSession(healthStore: HKHealthStore(), configuration: HKWorkoutConfiguration())
-    WorkoutControlsView(store: Workout.Store(session: session, type: .live))
+    WorkoutControlsView(store: Workout.Store(workout: session, kind: .tennis, sessionType: .live))
 }

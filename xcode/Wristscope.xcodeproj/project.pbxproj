@@ -371,7 +371,8 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "Wristscope Watch App/Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = Wristscope;
-				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "Wristscope runs a workout while streaming so it keeps going when your wrist is down, and saves it to Health when you stop.";
+				INFOPLIST_KEY_NSHealthShareUsageDescription = "Wristscope reads your heart rate, calories, distance and steps to show them during a workout.";
+				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "Wristscope saves your workouts to Health, along with their heart rate, calories, distance and steps.";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
 				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = "$(BUNDLE_ID_PREFIX).Wristscope";
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -406,7 +407,8 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "Wristscope Watch App/Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = Wristscope;
-				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "Wristscope runs a workout while streaming so it keeps going when your wrist is down, and saves it to Health when you stop.";
+				INFOPLIST_KEY_NSHealthShareUsageDescription = "Wristscope reads your heart rate, calories, distance and steps to show them during a workout.";
+				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "Wristscope saves your workouts to Health, along with their heart rate, calories, distance and steps.";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
 				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = "$(BUNDLE_ID_PREFIX).Wristscope";
 				LD_RUNPATH_SEARCH_PATHS = (

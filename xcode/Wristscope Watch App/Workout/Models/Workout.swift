@@ -20,6 +20,7 @@ extension Workout {
         case prepared
         case running
         case paused
+        case stopped(Date)
         case ended(Date)
         case failed(any Error)
     }
