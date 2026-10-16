@@ -9,27 +9,28 @@ import SwiftUI
 
 
 struct HomeView: View {
-    @Bindable var viewModel: ViewModel
-
+    @Bindable var applicationStore: ApplicationStore
+    
     var body: some View {
+
         NavigationStack {
-            ScrollView {
-                VStack(spacing: 12) {
-                    ConnectionStatusCard(status: viewModel.connectionStatus)
-
-                    Button {
-                        // Intentionally empty: starting a workout isn't wired up yet.
-                    } label: {
-                        Label("Start Workout", systemImage: "figure.run")
-                    }
-                    .buttonStyle(.borderedProminent)
-                    .tint(.green)
-
-                    NavigationLink {
-                        SettingsView()
-                    } label: {
-                        Label("Settings", systemImage: "gearshape")
-                    }
+            VStack(spacing: 12) {
+                AppHeaderView()
+                
+                Spacer()
+                
+                Button {
+                    applicationStore.startWorkout()
+                } label: {
+                    Label("Start Workout", systemImage: "figure.run")
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(.green)
+                
+                NavigationLink {
+                    SettingsView()
+                } label: {
+                    Label("Settings", systemImage: "gearshape")
                 }
             }
         }
@@ -37,5 +38,5 @@ struct HomeView: View {
 }
 
 #Preview {
-    HomeView(viewModel: ViewModel())
+    HomeView(applicationStore: ApplicationStore())
 }

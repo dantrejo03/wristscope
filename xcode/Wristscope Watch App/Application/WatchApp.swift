@@ -9,11 +9,11 @@ import SwiftUI
 
 @main
 struct WatchApp: App {
-    @State private var viewModel = ViewModel()
+    @State private var store = ApplicationStore()
 
     var body: some Scene {
         WindowGroup {
-            HomeView(viewModel: viewModel)
+            RootView(applicationStore: store)
         }
     }
 }
