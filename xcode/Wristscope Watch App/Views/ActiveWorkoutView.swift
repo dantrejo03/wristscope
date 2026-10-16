@@ -7,33 +7,21 @@
 
 import SwiftUI
 import WatchKit
+import HealthKit
 
 struct ActiveWorkoutView: View {
-    
-    @State private var tabSelection: Workout.Store.Tab = .controls
-    
+    @State var store: Workout.Store
+
     var body: some View {
-        TabView(selection: $tabSelection) {
-            WorkoutMetricsView().tag(Workout.Store.Tab.metrics)
-            WorkoutControlsView().tag(Workout.Store.Tab.controls)
+        TabView(selection: $store.tabSelection) {
+            WorkoutMetricsView(store: store).tag(Workout.Store.Tab.metrics)
+            WorkoutControlsView(store: store).tag(Workout.Store.Tab.controls)
             NowPlayingView().tag(Workout.Store.Tab.nowPlaying)
         }
     }
 }
 
-struct WorkoutControlsView: View {
-    var body: some View {
-        Text("Controls")
-    }
-}
-
-struct WorkoutMetricsView: View {
-    var body: some View {
-        Text("Metrics")
-    }
-}
-
-
 #Preview {
-    ActiveWorkoutView()
+    let session = try! HKWorkoutSession(healthStore: HKHealthStore(), configuration: HKWorkoutConfiguration())
+    ActiveWorkoutView(store: Workout.Store(session: session, type: .live))
 }

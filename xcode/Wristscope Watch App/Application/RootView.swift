@@ -13,8 +13,9 @@ struct RootView: View {
     var body: some View {
         switch applicationStore.state {
         case .home: HomeView(applicationStore: applicationStore)
-        case .countdown: CountdownView(onFinish: applicationStore.beginActive)
-        case .active: ActiveWorkoutView()
+        case .countdown(_, let showLoading):
+            CountdownView(showLoading: showLoading, onFinish: applicationStore.countdownEnded)
+        case .active(let store): ActiveWorkoutView(store: store)
         case .summary: EmptyView()
         }
     }

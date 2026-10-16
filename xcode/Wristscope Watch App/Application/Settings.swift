@@ -105,6 +105,23 @@ extension SessionType {
     var label: some View {
         Label(title, systemImage: systemImage)
     }
+
+    /// Label for this session type's wildcard button on the controls page.
+    var wildcardTitle: String {
+        switch self {
+        case .live: return "Connection"
+        case .rep: return "Rep"
+        case .workout: return "Mark Event"
+        }
+    }
+
+    var wildcardSymbol: String {
+        switch self {
+        case .live: return "iphone.radiowaves.left.and.right"
+        case .rep: return "record.circle"
+        case .workout: return "flag.fill"
+        }
+    }
 }
 
 

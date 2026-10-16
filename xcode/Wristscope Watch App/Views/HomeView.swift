@@ -11,7 +11,7 @@ import SwiftUI
 struct HomeView: View {
     @Bindable var applicationStore: ApplicationStore
     @State private var isBrowsing = false
-    @State private var selectedKind = Workout.Kind.badminton
+    @State private var selectedWorkout = Workout.Kind.badminton
 
     var body: some View {
 
@@ -23,8 +23,8 @@ struct HomeView: View {
 
                 Spacer()
 
-                WorkoutSelectionView(selection: $selectedKind, isBrowsing: $isBrowsing) {
-                    applicationStore.startWorkout()
+                WorkoutSelectionView(selection: $selectedWorkout, isBrowsing: $isBrowsing) {
+                    Task { await applicationStore.start(selectedWorkout) }
                 }
             }
             .toolbar {
@@ -41,11 +41,9 @@ struct HomeView: View {
                 }
             }
         }
-        // On the NavigationStack rather than the VStack, so coming back from Settings
-        // doesn't reset the selection to the saved workout
         .onAppear {
             if let saved = UserDefaults.standard.string(forKey: Workout.Kind.key).flatMap(Workout.Kind.init(rawValue:)) {
-                selectedKind = saved
+                selectedWorkout = saved
             }
         }
     }
