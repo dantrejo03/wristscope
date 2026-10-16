@@ -2,7 +2,7 @@
 //  SettingsView.swift
 //  Wristscope Watch App
 //
-//  Created by Daniel Trejo on 10/15/26.
+//  Created by Daniel Trejo on 10/16/26.
 //
 
 import SwiftUI
@@ -70,3 +70,4 @@ struct SettingsView: View {
         SettingsView()
     }
 }
+
