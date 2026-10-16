@@ -9,19 +9,27 @@ import SwiftUI
 import CoreMotion
 
 
-protocol AppStorageField: CaseIterable, RawRepresentable where RawValue == String {
-    static var appStorageKey: String { get }
+// MARK: Protocols
+
+protocol UserDefaultsBacked {
+    static var key: String { get }
+}
+
+protocol AppStorageField: CaseIterable, UserDefaultsBacked, RawRepresentable where RawValue == String {
     static var defaultValue: Self { get }
     static var explanation: String? { get }
     static var fieldTitle: String { get }
 }
+
+
+// MARK: - Protocol conformance
 
 extension AppStorageField {
     static var explanation: String? { nil }
 
     /// The value currently saved in `UserDefaults`, which is where `@AppStorage` keeps it.
     static var current: Self {
-        UserDefaults.standard.string(forKey: appStorageKey).flatMap(Self.init(rawValue:)) ?? defaultValue
+        UserDefaults.standard.string(forKey: key).flatMap(Self.init(rawValue:)) ?? defaultValue
     }
 }
 
@@ -30,7 +38,7 @@ enum SessionType: String, AppStorageField {
     case rep
     case workout
     
-    static let appStorageKey: String = "sessionType"
+    static let key: String = "sessionType"
     static let defaultValue = SessionType.live
     static let explanation: String? = nil
     static let fieldTitle: String = "Session"
@@ -43,7 +51,7 @@ enum SampleRate: String, AppStorageField {
     case hz20
     case hz10
     
-    static let appStorageKey: String = "sampleRate"
+    static let key: String = "sampleRate"
     static let defaultValue = SampleRate.hz100
     static let explanation: String? = nil
     static let fieldTitle: String = "Sample Rate"
@@ -55,11 +63,16 @@ enum ReferenceFrame: String, AppStorageField {
     case magneticNorth
     case trueNorth
     
-    static let appStorageKey: String = "referenceFrame"
+    static let key: String = "referenceFrame"
     static let defaultValue = ReferenceFrame.arbitrary
     static let explanation: String? = "The fixed direction that orientation is measured against."
     static let fieldTitle: String = "Reference Frame"
 }
+
+extension Workout.Kind: UserDefaultsBacked {
+    static let key: String = "lastWorkoutKind"
+}
+
 
 
 // MARK: - Extensions

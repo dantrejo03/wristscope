@@ -14,7 +14,7 @@ struct RootView: View {
         switch applicationStore.state {
         case .home: HomeView(applicationStore: applicationStore)
         case .countdown: CountdownView(onFinish: applicationStore.beginActive)
-        case .active: Text("Active") 
+        case .active: ActiveWorkoutView()
         case .summary: EmptyView()
         }
     }

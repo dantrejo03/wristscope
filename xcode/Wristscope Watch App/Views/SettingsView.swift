@@ -9,9 +9,9 @@ import SwiftUI
 
 
 struct SettingsView: View {
-    @AppStorage(SessionType.appStorageKey) private var sessionType = SessionType.defaultValue
-    @AppStorage(SampleRate.appStorageKey) private var sampleRate = SampleRate.defaultValue
-    @AppStorage(ReferenceFrame.appStorageKey) private var referenceFrame = ReferenceFrame.defaultValue
+    @AppStorage(SessionType.key) private var sessionType = SessionType.defaultValue
+    @AppStorage(SampleRate.key) private var sampleRate = SampleRate.defaultValue
+    @AppStorage(ReferenceFrame.key) private var referenceFrame = ReferenceFrame.defaultValue
 
     var body: some View {
         List {
