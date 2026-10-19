@@ -10,7 +10,7 @@ import SwiftUI
 @main
 struct WatchApp: App {
     @State private var store = ApplicationStore()
-
+    
     var body: some Scene {
         WindowGroup {
             RootView(applicationStore: store)

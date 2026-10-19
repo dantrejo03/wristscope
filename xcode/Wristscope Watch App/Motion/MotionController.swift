@@ -8,96 +8,58 @@
 import CoreMotion
 import Foundation
 
-
 extension Motion {
     final class Controller {
         
-        /// Needs to be nonisolated so that it can be accessed in `deinit`.
-        nonisolated(unsafe) private let motionManager = CMMotionManager()
-
-        private let buffer = SampleBuffer(connectivity: WatchConnectivityManager.shared)
+        private let sensor: Sensor
+        private var sink: any SampleSink
         
-        /// CMMotionManager only delivers to an OperationQueue. This one runs its operations on
-        /// `buffer.queue`, so the handlers can enter the buffer's isolation.
-        private let handlerQueue = OperationQueue()
-
-        private var updateInterval: TimeInterval { SampleRate.current.updateInterval }
-
-        init() {
-            handlerQueue.name = "com.wristscope.motion.handlers"
-            handlerQueue.maxConcurrentOperationCount = 1
-            handlerQueue.underlyingQueue = buffer.queue
+        init(sensor: Sensor, sink: any SampleSink) {
+            self.sensor = sensor
+            self.sink = sink
         }
 
-        deinit {
-            motionManager.stopAccelerometerUpdates()
-            motionManager.stopGyroUpdates()
-            motionManager.stopDeviceMotionUpdates()
-            buffer.stopFlushing()
-        }
+        /// Reports which sensors are running afterwards. One is false when this device doesn't
+        /// have it.
+        func startSensors() -> Sensor.Availability {
+            let interval = SampleRate.current.updateInterval
+            let frame = ReferenceFrame.currentAvailable.cmFrame
+            let sink = self.sink
 
-        /// Returns the sources that are running afterwards. A source is left out when this
-        /// device doesn't have it.
-        @discardableResult
-        func startSensors() -> Set<Source> {
-            buffer.startFlushing()
-            var active: Set<Source> = []
-            if startDeviceMotion() { active.insert(.deviceMotion) }
-            if startAccelerometer() { active.insert(.accelerometer) }
-            if startGyro() { active.insert(.gyro) }
-            return active
+            // The sink is on `Motion.Actor`, so this hops there instead of waiting on it.
+            Task { @Motion.Actor in sink.start() }
+
+            let a = sensor.startAccelerometer(updateInterval: interval) {
+                sink.receive($0)
+            }
+            
+            let g = sensor.startGyroscope(updateInterval: interval) {
+                sink.receive($0)
+            }
+            
+            let dm = sensor.startDeviceMotion(
+                updateInterval: interval, referenceFrame: frame
+            ) {
+                sink.receive($0)
+            }
+            
+            return Sensor.Availability(accelerometer: a, gyro: g, deviceMotion: dm)
         }
 
         func stopSensors() {
-            motionManager.stopAccelerometerUpdates()
-            motionManager.stopGyroUpdates()
-            motionManager.stopDeviceMotionUpdates()
-            buffer.stopFlushing()
+            sensor.stopAccelerometer()
+            sensor.stopGyroscope()
+            sensor.stopDeviceMotion()
+            let sink = self.sink
+            Task { @Motion.Actor in sink.stop() }
         }
-        
-        /// Returns whether the updates are running afterwards.
-        private func startDeviceMotion() -> Bool {
-            guard motionManager.isDeviceMotionAvailable else { return false }
-            guard !motionManager.isDeviceMotionActive else { return true }
-            
-            motionManager.deviceMotionUpdateInterval = updateInterval
-            // The handlers are `@Sendable` so they aren't inferred @MainActor; they run on `buffer.queue`.
-            motionManager.startDeviceMotionUpdates(
-                using: ReferenceFrame.currentAvailable.cmFrame, to: handlerQueue
-            ) { @Sendable [buffer] motion, error in
-                guard let motion else { return }
-                let sample = DeviceMotionSample(from: motion)
-                buffer.assumeIsolated { $0.append(sample) }
-            }
-            return true
-        }
+    }
+}
 
-        /// Returns whether the updates are running afterwards.
-        private func startAccelerometer() -> Bool {
-            guard motionManager.isAccelerometerAvailable else { return false }
-            guard !motionManager.isAccelerometerActive else { return true }
-
-            motionManager.accelerometerUpdateInterval = updateInterval
-            motionManager.startAccelerometerUpdates(to: handlerQueue) { @Sendable [buffer] data, error in
-                guard let data else { return }
-                let sample = AccelerometerSample(from: data)
-                buffer.assumeIsolated { $0.append(sample) }
-            }
-            return true
-        }
-
-        /// Returns whether the updates are running afterwards.
-        private func startGyro() -> Bool {
-            guard motionManager.isGyroAvailable else { return false }
-            guard !motionManager.isGyroActive else { return true }
-
-            motionManager.gyroUpdateInterval = updateInterval
-            motionManager.startGyroUpdates(to: handlerQueue) { @Sendable [buffer] data, error in
-                guard let data else { return }
-                let sample = GyroSample(from: data)
-                buffer.assumeIsolated { $0.append(sample) }
-            }
-            return true
-        }
+extension Motion.Sensor {
+    struct Availability {
+        let accelerometer: Bool
+        let gyro: Bool
+        let deviceMotion: Bool
     }
 }

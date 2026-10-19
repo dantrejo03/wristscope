@@ -10,8 +10,10 @@ import HealthKit
 
 
 extension Workout {
+    
     @Observable
     final class Store {
+        
         // MARK: Health
         @ObservationIgnored let workout: HKWorkoutSession
         @ObservationIgnored let kind: Workout.Kind
@@ -19,13 +21,27 @@ extension Workout {
         @ObservationIgnored let metricsStore: Workout.Metrics.Store
         @ObservationIgnored private let builderObserver = Builder.Observer()
         @ObservationIgnored private var observationTask: Task<Void, Never>?
+        /// Read once collection ends. The application store shows it when the session ends.
+        @ObservationIgnored private(set) var summary: Workout.Summary?
         
+        // MARK: Motion
+        @ObservationIgnored let motionController: Motion.Controller
+        /// Set while a pause has the sensors stopped. `state` can't say this, since it doesn't
+        /// follow pause events while another screen is up.
+        @ObservationIgnored private var isMotionPaused = false
+
         // MARK: State
         
         // First tab that gets shown
         var tabSelection: Tab = .metrics
         
         private(set) var state: State = .running
+        
+        /// Running or paused, read straight from the session. Used when leaving a screen that
+        /// covers the controls, since pause events don't change `state` while one is up.
+        private var sessionState: State {
+            workout.state == .paused ? .paused : .running
+        }
         
         var showPausedButton: Bool {
             if case .paused = state { return true }
@@ -35,27 +51,32 @@ extension Workout {
         /// Goes up once each marker is saved, so the view can confirm it with a tap on the wrist.
         private(set) var markCount = 0
 
-        /// Read once collection ends. The application store shows it when the session ends.
-        @ObservationIgnored private(set) var summary: Workout.Summary?
+
 
         /// Set by End, so a workout the user finished can be told apart from one that ended
         /// some other way.
         @ObservationIgnored private(set) var isEndRequested = false
 
         @ObservationIgnored private var finishTask: Task<Void, Never>?
-
-        /// Running or paused, read straight from the session. Used when leaving a screen that
-        /// covers the controls, since pause events don't change `state` while one is up.
-        private var sessionState: State {
-            workout.state == .paused ? .paused : .running
-        }
-
-
-        init(workout: HKWorkoutSession, kind: Workout.Kind, sessionType: SessionType) {
+        
+        
+        init(
+            workout: HKWorkoutSession,
+            kind: Workout.Kind,
+            sessionType: SessionType,
+            sensor: Motion.Sensor
+        ) {
             self.workout = workout
             self.kind = kind
             self.sessionType = sessionType
             self.metricsStore = Metrics.Store(workout: workout)
+            
+            self.motionController = Motion.Controller(
+                sensor: sensor,
+                sink: Motion.LiveSink(
+                    connectivity: WatchConnectivityManager.shared
+                )
+            )
             
             // Set before `beginCollection`, so no readings are missed
             workout.associatedWorkoutBuilder().delegate = builderObserver
@@ -87,6 +108,7 @@ extension Workout {
         /// is read before saving, so it's there even if saving fails.
         func finish(at endDate: Date) async {
             if finishTask == nil {
+                motionController.stopSensors()
                 state = .ending
                 finishTask = Task {
                     let builder = workout.associatedWorkoutBuilder()
@@ -198,6 +220,9 @@ extension Workout.Store {
     }
 
     func handle(_ event: Workout.Event) {
+        // Before the check below, so the sensors follow pauses whatever screen is up.
+        updateSensors(for: event)
+
         // Only the controls follow pause events. The other screens read the session when
         // they close instead, so an event can't pull one out from under the user.
         switch state {
@@ -209,6 +234,25 @@ extension Workout.Store {
         case .running: state = .running
         case .paused: state = .paused
         case .prepared, .stopped, .ended, .failed: break
+        }
+    }
+
+    /// Stops the sensors on pause and starts them on resume. The first `.running` is skipped,
+    /// since `ApplicationStore.begin()` already started them. `finish(at:)` stops them for good.
+    private func updateSensors(for event: Workout.Event) {
+        if case .ending = state { return }
+
+        switch event {
+        case .paused:
+            guard !isMotionPaused else { return }
+            motionController.stopSensors()
+            isMotionPaused = true
+        case .running:
+            guard isMotionPaused else { return }
+            _ = motionController.startSensors()
+            isMotionPaused = false
+        case .prepared, .stopped, .ended, .failed:
+            break
         }
     }
 }

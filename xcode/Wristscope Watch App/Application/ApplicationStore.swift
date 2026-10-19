@@ -17,8 +17,11 @@ final class ApplicationStore {
     // `HKWorkoutSession.delegate` is weak, so this is the only strong reference.
     @ObservationIgnored private let observer = Workout.Session.Observer()
     @ObservationIgnored private var observationTask: Task<Void, Never>?
+    
+    let sensor = Motion.Sensor()
 
     init() {
+        let _ = WatchConnectivityManager.shared
         setUpObservationTask()
     }
 
@@ -36,11 +39,18 @@ final class ApplicationStore {
                 try await Workout.Manager.shared.requestAuthorization()
             }
 
-            let session = try Workout.Manager.shared.prepare(workout.activityType, delegate: observer)
-            state = .countdown(
-                Workout.Store(workout: session, kind: workout, sessionType: SessionType.current),
-                showLoading: false
+            let session = try Workout.Manager.shared.prepare(
+                workout.activityType, delegate: observer
             )
+            let workoutStore = Workout.Store(
+                workout: session,
+                kind: workout,
+                sessionType: SessionType.current,
+                sensor: sensor
+            )
+            
+            state = .countdown(workoutStore, showLoading: false)
+            
         } catch {
             state = .home(isStarting: false)
         }
@@ -63,6 +73,7 @@ final class ApplicationStore {
         
         do {
             try await Workout.Manager.shared.begin(store.workout)
+            let _ = store.motionController.startSensors()
             state = .active(store)
         } catch {
 

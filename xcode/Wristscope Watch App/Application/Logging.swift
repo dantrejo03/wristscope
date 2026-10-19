@@ -12,4 +12,5 @@ nonisolated enum AppLog {
 
     static let connectivity = Logger(subsystem: subsystem, category: "Connectivity")
     static let workout = Logger(subsystem: subsystem, category: "Workout")
+    static let motion = Logger(subsystem: subsystem, category: "Motion")
 }

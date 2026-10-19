@@ -32,5 +32,5 @@ struct ActiveWorkoutView: View {
 
 #Preview {
     let session = try! HKWorkoutSession(healthStore: HKHealthStore(), configuration: HKWorkoutConfiguration())
-    ActiveWorkoutView(store: Workout.Store(workout: session, kind: .tennis, sessionType: .rep))
+    ActiveWorkoutView(store: Workout.Store(workout: session, kind: .tennis, sessionType: .rep, sensor: Motion.Sensor()))
 }
