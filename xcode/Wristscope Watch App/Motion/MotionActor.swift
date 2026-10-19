@@ -7,7 +7,7 @@
 
 import Foundation
 
-enum Motion {
+extension Motion {
     
     nonisolated static let queue = DispatchSerialQueue(
         label: "com.wristscope.motion", qos: .userInitiated

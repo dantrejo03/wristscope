@@ -37,10 +37,17 @@
 /* Begin PBXFileReference section */
 		34D97BD1307F62A600088565 /* Wristscope.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Wristscope.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		34D97BDE307F62A800088565 /* Wristscope Watch App.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Wristscope Watch App.app"; sourceTree = BUILT_PRODUCTS_DIR; };
-		A7E1C0E0307F62B000088565 /* Config/Shared.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Config/Shared.xcconfig; sourceTree = "<group>"; };
+		A7E1C0E0307F62B000088565 /* Config.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = Config.xcconfig; path = Config/Config.xcconfig; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		34D97FEE3086811800088565 /* Exceptions for "Shared" folder in "Wristscope Watch App" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Motion/Motion.swift,
+			);
+			target = 34D97BDD307F62A800088565 /* Wristscope Watch App */;
+		};
 		A7E1C0DE307F62B000088565 /* Exceptions for "Wristscope Watch App" folder in "Wristscope Watch App" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
@@ -74,6 +81,14 @@
 			path = "Wristscope Watch App";
 			sourceTree = "<group>";
 		};
+		34D97FE63086803A00088565 /* Shared */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				34D97FEE3086811800088565 /* Exceptions for "Shared" folder in "Wristscope Watch App" target */,
+			);
+			path = Shared;
+			sourceTree = "<group>";
+		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -97,7 +112,8 @@
 		34D97BC8307F62A600088565 = {
 			isa = PBXGroup;
 			children = (
-				A7E1C0E0307F62B000088565 /* Config/Shared.xcconfig */,
+				A7E1C0E0307F62B000088565 /* Config.xcconfig */,
+				34D97FE63086803A00088565 /* Shared */,
 				34D97BD3307F62A600088565 /* Wristscope */,
 				34D97BE2307F62A800088565 /* Wristscope Watch App */,
 				34D97BD2307F62A600088565 /* Products */,
@@ -132,6 +148,7 @@
 			);
 			fileSystemSynchronizedGroups = (
 				34D97BD3307F62A600088565 /* Wristscope */,
+				34D97FE63086803A00088565 /* Shared */,
 			);
 			name = Wristscope;
 			packageProductDependencies = (
@@ -245,7 +262,7 @@
 /* Begin XCBuildConfiguration section */
 		34D97BE9307F62A900088565 /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = A7E1C0E0307F62B000088565 /* Config/Shared.xcconfig */;
+			baseConfigurationReference = A7E1C0E0307F62B000088565 /* Config.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
@@ -307,7 +324,7 @@
 		};
 		34D97BEA307F62A900088565 /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = A7E1C0E0307F62B000088565 /* Config/Shared.xcconfig */;
+			baseConfigurationReference = A7E1C0E0307F62B000088565 /* Config.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;

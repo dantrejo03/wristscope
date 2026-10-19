@@ -5,24 +5,23 @@
 //  Created by Daniel Trejo on 10/16/26.
 //
 
-import Foundation
 import CoreMotion
 import os
 
 
 extension Motion {
     nonisolated final class Sensor {
-
+        
         private let manager = CMMotionManager()
 
         /// CMMotionManager only delivers to an OperationQueue. This one runs its operations on
-        /// `Motion.queue`, so the handlers can enter `Motion.Actor`.
+        /// the queue passed to `init`.
         private let handlerQueue = OperationQueue()
 
-        init() {
+        init(deliveringOn queue: DispatchSerialQueue) {
             handlerQueue.name = "com.wristscope.motion.handlers"
             handlerQueue.maxConcurrentOperationCount = 1
-            handlerQueue.underlyingQueue = Motion.queue
+            handlerQueue.underlyingQueue = queue
         }
 
         deinit {
@@ -30,15 +29,19 @@ extension Motion {
             manager.stopGyroUpdates()
             manager.stopDeviceMotionUpdates()
         }
+        
+        static func supports(_ frame: CMAttitudeReferenceFrame) -> Bool {
+            return CMMotionManager.availableAttitudeReferenceFrames()
+                .contains(frame)
+        }
 
-        // The CoreMotion handlers are `@Sendable` so they aren't inferred @MainActor; they run
-        // on `Motion.queue`.
+        // The handlers are `@Sendable` so a closure written in main-actor code isn't inferred
+        // @MainActor; they run on the queue passed to `init`.
 
         /// Returns whether the updates are running afterwards.
-        @MainActor
         func startAccelerometer(
             updateInterval: Double,
-            handler: @escaping @Motion.Actor (AccelerometerSample) -> Void
+            handler: @escaping @Sendable (Motion.AccelerometerReading?, (any Error)?) -> Void
         ) -> Bool {
             guard manager.isAccelerometerAvailable else { return false }
             guard !manager.isAccelerometerActive else {
@@ -47,23 +50,21 @@ extension Motion {
             }
 
             manager.accelerometerUpdateInterval = updateInterval
-            manager.startAccelerometerUpdates(to: handlerQueue) { @Sendable data, error in
-                guard let data else {
-                    AppLog.motion.error("Accelerometer update failed: \(error?.localizedDescription ?? "no data")")
-                    return
+            manager.startAccelerometerUpdates(to: handlerQueue) { data, error in
+                if let data {
+                    handler(AccelerometerReading(from: data), error)
+                } else {
+                    handler(nil, error)
                 }
-                let sample = AccelerometerSample(from: data)
-                Motion.Actor.assumeIsolated { handler(sample) }
             }
-
+            
             return true
         }
 
         /// Returns whether the updates are running afterwards.
-        @MainActor
         func startGyroscope(
             updateInterval: Double,
-            handler: @escaping @Motion.Actor (GyroSample) -> Void
+            handler: @escaping @Sendable (Motion.GyroReading?, (any Error)?) -> Void
         ) -> Bool {
             guard manager.isGyroAvailable else { return false }
             guard !manager.isGyroActive else {
@@ -72,24 +73,21 @@ extension Motion {
             }
 
             manager.gyroUpdateInterval = updateInterval
-            manager.startGyroUpdates(to: handlerQueue) { @Sendable data, error in
-                guard let data else {
-                    AppLog.motion.error("Gyroscope update failed: \(error?.localizedDescription ?? "no data")")
-                    return
+            manager.startGyroUpdates(to: handlerQueue) { data, error in
+                if let data {
+                    handler(GyroReading(from: data), error)
+                } else {
+                    handler(nil, error)
                 }
-                let sample = GyroSample(from: data)
-                Motion.Actor.assumeIsolated { handler(sample) }
             }
-
             return true
         }
 
         /// Returns whether the updates are running afterwards.
-        @MainActor
         func startDeviceMotion(
             updateInterval: Double,
             referenceFrame: CMAttitudeReferenceFrame,
-            handler: @escaping @Motion.Actor (DeviceMotionSample) -> Void
+            handler: @escaping @Sendable (Motion.DeviceMotionReading?, (any Error)?) -> Void
         ) -> Bool {
             guard manager.isDeviceMotionAvailable else { return false }
             guard !manager.isDeviceMotionActive else {
@@ -98,23 +96,27 @@ extension Motion {
             }
 
             manager.deviceMotionUpdateInterval = updateInterval
-            manager.startDeviceMotionUpdates(using: referenceFrame, to: handlerQueue) { @Sendable data, error in
-                guard let data else {
-                    AppLog.motion.error("Device motion update failed: \(error?.localizedDescription ?? "no data")")
-                    return
+            manager.startDeviceMotionUpdates(using: referenceFrame, to: handlerQueue) { motion, error in
+                if let motion {
+                    handler(DeviceMotionReading(from: motion), error)
+                } else {
+                    handler(nil, error)
                 }
-                let sample = DeviceMotionSample(from: data)
-                Motion.Actor.assumeIsolated { handler(sample) }
             }
-
             return true
         }
 
-        @MainActor
         func stopAccelerometer() { manager.stopAccelerometerUpdates() }
-        @MainActor
         func stopGyroscope() { manager.stopGyroUpdates() }
-        @MainActor
         func stopDeviceMotion() { manager.stopDeviceMotionUpdates() }
     }
 }
+
+extension Motion.Sensor {
+    nonisolated struct Availability {
+        let accelerometer: Bool
+        let gyro: Bool
+        let deviceMotion: Bool
+    }
+}
+

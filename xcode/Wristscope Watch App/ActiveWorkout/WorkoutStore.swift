@@ -7,6 +7,7 @@
 
 import Foundation
 import HealthKit
+import CoreMotion
 
 
 extension Workout {
@@ -70,12 +71,11 @@ extension Workout {
             self.kind = kind
             self.sessionType = sessionType
             self.metricsStore = Metrics.Store(workout: workout)
-            
             self.motionController = Motion.Controller(
                 sensor: sensor,
-                sink: Motion.LiveSink(
-                    connectivity: WatchConnectivityManager.shared
-                )
+                sink: <#T##any Motion.SampleSink#>,
+                updateInterval: <#T##Double#>,
+                referenceFrame: <#T##CMAttitudeReferenceFrame#>
             )
             
             // Set before `beginCollection`, so no readings are missed

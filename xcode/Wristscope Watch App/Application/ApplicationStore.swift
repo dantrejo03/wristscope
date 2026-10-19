@@ -18,7 +18,7 @@ final class ApplicationStore {
     @ObservationIgnored private let observer = Workout.Session.Observer()
     @ObservationIgnored private var observationTask: Task<Void, Never>?
     
-    let sensor = Motion.Sensor()
+    let sensor = Motion.Sensor(deliveringOn: Motion.queue)
 
     init() {
         let _ = WatchConnectivityManager.shared
