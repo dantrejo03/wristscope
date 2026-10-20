@@ -41,7 +41,7 @@ extension Motion {
         /// Returns whether the updates are running afterwards.
         func startAccelerometer(
             updateInterval: Double,
-            handler: @escaping @Sendable (Motion.AccelerometerReading?, (any Error)?) -> Void
+            handler: @escaping @Sendable (Motion.Reading?, (any Error)?) -> Void
         ) -> Bool {
             guard manager.isAccelerometerAvailable else { return false }
             guard !manager.isAccelerometerActive else {
@@ -52,7 +52,7 @@ extension Motion {
             manager.accelerometerUpdateInterval = updateInterval
             manager.startAccelerometerUpdates(to: handlerQueue) { data, error in
                 if let data {
-                    handler(AccelerometerReading(from: data), error)
+                    handler(.accelerometer(AccelerometerReading(from: data)), error)
                 } else {
                     handler(nil, error)
                 }
@@ -64,7 +64,7 @@ extension Motion {
         /// Returns whether the updates are running afterwards.
         func startGyroscope(
             updateInterval: Double,
-            handler: @escaping @Sendable (Motion.GyroReading?, (any Error)?) -> Void
+            handler: @escaping @Sendable (Motion.Reading?, (any Error)?) -> Void
         ) -> Bool {
             guard manager.isGyroAvailable else { return false }
             guard !manager.isGyroActive else {
@@ -75,7 +75,7 @@ extension Motion {
             manager.gyroUpdateInterval = updateInterval
             manager.startGyroUpdates(to: handlerQueue) { data, error in
                 if let data {
-                    handler(GyroReading(from: data), error)
+                    handler(.gyro(GyroReading(from: data)), error)
                 } else {
                     handler(nil, error)
                 }
@@ -87,7 +87,7 @@ extension Motion {
         func startDeviceMotion(
             updateInterval: Double,
             referenceFrame: CMAttitudeReferenceFrame,
-            handler: @escaping @Sendable (Motion.DeviceMotionReading?, (any Error)?) -> Void
+            handler: @escaping @Sendable (Motion.Reading?, (any Error)?) -> Void
         ) -> Bool {
             guard manager.isDeviceMotionAvailable else { return false }
             guard !manager.isDeviceMotionActive else {
@@ -98,7 +98,7 @@ extension Motion {
             manager.deviceMotionUpdateInterval = updateInterval
             manager.startDeviceMotionUpdates(using: referenceFrame, to: handlerQueue) { motion, error in
                 if let motion {
-                    handler(DeviceMotionReading(from: motion), error)
+                    handler(.deviceMotion(DeviceMotionReading(from: motion)), error)
                 } else {
                     handler(nil, error)
                 }

@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import os
 
 
 extension Motion {
@@ -16,9 +17,7 @@ extension Motion {
         func openTap()
         func closeTap()
         
-        func receive(_ sample: AccelerometerReading)
-        func receive(_ sample: GyroReading)
-        func receive(_ sample: DeviceMotionReading)
+        func receive(_ reading: Motion.Reading)
     }
 }
 
@@ -27,6 +26,8 @@ extension Motion {
 
     @Motion.Actor
     final class LiveSink: SampleSink {
+        typealias Formatter = Motion.SampleFormatter
+        
         private enum State {
             case open(DispatchSourceTimer)
             case closed
@@ -73,17 +74,16 @@ extension Motion {
             state = .closed
             flush()
         }
-
-        func receive(_ sample: AccelerometerReading) {
+        
+        func receive(_ reading: Motion.Reading) {
+            let sample = Formatter.sample(from: reading)
             
-        }
-
-        func receive(_ sample: GyroReading) {
-            
-        }
-
-        func receive(_ sample: DeviceMotionReading) {
-            
+            let difference = Formatter.hasRoom(in: buffer, for: sample.tag)
+            if difference >= 0 {
+                Formatter.unsafePackageBytes(from: sample, to: &buffer)
+            } else {
+                AppLog.motion.error("Buffer full, dropping \(sample.tag.name) sample (\(-difference) bytes short)")
+            }
         }
 
         private func flush() {
@@ -108,7 +108,10 @@ extension Motion {
                 guard let self else { return }
                 Motion.Actor.assumeIsolated { self.flush() }
             }
-            
+
+            // Timers start inactive. One that's never activated never fires, and releasing it
+            // crashes.
+            timer.activate()
             return timer
         }
     }

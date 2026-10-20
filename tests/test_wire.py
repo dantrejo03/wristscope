@@ -33,23 +33,22 @@ def test_record_table_matches_channels():
 
 
 def test_swift_tags_and_sizes():
-    # Locked to Motion.Source / fieldCount in MotionDataTypes.swift.
+    # Locked to Motion.SampleTag and SampleFormatter in xcode/Shared/Motion.
     assert {tag: (source, count) for tag, (source, count) in RECORDS.items()} == {
         1: (Source.ACCELEROMETER, 4),
         2: (Source.GYRO, 4),
-        3: (Source.DEVICE_MOTION, 18),
+        3: (Source.DEVICE_MOTION, 14),
     }
 
 
 def test_device_motion_field_order():
-    # Swift writes: timestamp, quaternion wxyz, rotation xyz, user accel xyz, gravity xyz, magnetic xyz, heading.
+    # Swift writes: timestamp, quaternion wxyz, user accel xyz, rotation xyz, gravity xyz.
     ids = [c.id for c in channels_for(Source.DEVICE_MOTION)]
     assert ids[0] == "motion.quaternion.w" and ids[3] == "motion.quaternion.z"
-    assert ids[4:7] == ["motion.rotation_rate.x", "motion.rotation_rate.y", "motion.rotation_rate.z"]
-    assert ids[7:10] == [f"motion.user_accel.{a}" for a in "xyz"]
+    assert ids[4:7] == [f"motion.user_accel.{a}" for a in "xyz"]
+    assert ids[7:10] == [f"motion.rotation_rate.{a}" for a in "xyz"]
     assert ids[10:13] == [f"motion.gravity.{a}" for a in "xyz"]
-    assert ids[13:16] == [f"motion.magnetic_field.{a}" for a in "xyz"]
-    assert ids[16] == "motion.heading"
+    assert len(ids) == 13
 
 
 def test_known_bytes_are_little_endian():

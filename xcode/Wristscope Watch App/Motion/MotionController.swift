@@ -37,7 +37,6 @@ extension Motion {
             Task { @Motion.Actor in sink.openTap() }
             
             // The handlers run on `Motion.queue`, so they can enter `Motion.Actor` directly.
-            // Each builds its sample first, since CoreMotion's data classes aren't Sendable.
 
             let a = sensor.startAccelerometer(updateInterval: updateInterval) { data, error in
                 guard let data else {

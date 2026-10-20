@@ -41,13 +41,6 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		34D97FEE3086811800088565 /* Exceptions for "Shared" folder in "Wristscope Watch App" target */ = {
-			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
-			membershipExceptions = (
-				Motion/Motion.swift,
-			);
-			target = 34D97BDD307F62A800088565 /* Wristscope Watch App */;
-		};
 		A7E1C0DE307F62B000088565 /* Exceptions for "Wristscope Watch App" folder in "Wristscope Watch App" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
@@ -83,9 +76,6 @@
 		};
 		34D97FE63086803A00088565 /* Shared */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-				34D97FEE3086811800088565 /* Exceptions for "Shared" folder in "Wristscope Watch App" target */,
-			);
 			path = Shared;
 			sourceTree = "<group>";
 		};
@@ -171,6 +161,7 @@
 			);
 			fileSystemSynchronizedGroups = (
 				34D97BE2307F62A800088565 /* Wristscope Watch App */,
+				34D97FE63086803A00088565 /* Shared */,
 			);
 			name = "Wristscope Watch App";
 			packageProductDependencies = (

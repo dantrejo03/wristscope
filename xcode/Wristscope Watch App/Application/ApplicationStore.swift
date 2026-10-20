@@ -19,9 +19,9 @@ final class ApplicationStore {
     @ObservationIgnored private var observationTask: Task<Void, Never>?
     
     let sensor = Motion.Sensor(deliveringOn: Motion.queue)
+    let connectivity = WatchConnectivityManager.shared
 
     init() {
-        let _ = WatchConnectivityManager.shared
         setUpObservationTask()
     }
 
@@ -42,12 +42,13 @@ final class ApplicationStore {
             let session = try Workout.Manager.shared.prepare(
                 workout.activityType, delegate: observer
             )
-            let workoutStore = Workout.Store(
+            let config = Workout.Store.Config(
                 workout: session,
                 kind: workout,
-                sessionType: SessionType.current,
-                sensor: sensor
+                sensor: sensor,
+                connectivity: connectivity
             )
+            let workoutStore = Workout.Store(config: config)
             
             state = .countdown(workoutStore, showLoading: false)
             

@@ -18,7 +18,6 @@ from wristscope.core.samples import Sample
 Motion = Callable[[float], tuple[np.ndarray, np.ndarray]]
 
 STANDARD_GRAVITY = 9.80665  # m/s² per g
-EARTH_FIELD = np.array([20.0, 0.0, -45.0])  # µT, reference frame with x toward magnetic north
 UPTIME = 1000.0  # CoreMotion timestamps count from boot, so the first sample isn't at 0
 
 
@@ -115,11 +114,9 @@ class Simulator:
         else:
             values = {
                 **_vector("motion.quaternion", self._reported(attitude, t), axes="wxyz"),
-                **_vector("motion.rotation_rate", rotation_rate + self._noise(0.001)),
                 **_vector("motion.user_accel", user_accel + self._noise(0.002)),
+                **_vector("motion.rotation_rate", rotation_rate + self._noise(0.001)),
                 **_vector("motion.gravity", gravity),
-                **_vector("motion.magnetic_field", quat.rotate(to_watch, EARTH_FIELD) + self._noise(0.3)),
-                "motion.heading": _heading(attitude),
             }
         return Sample(source, timestamp, values)
 
@@ -145,8 +142,3 @@ class Simulator:
 def _vector(prefix: str, components, axes: str = "xyz") -> dict[str, float]:
     return {f"{prefix}.{axis}": float(value) for axis, value in zip(axes, components)}
 
-
-def _heading(attitude: np.ndarray) -> float:
-    """Compass direction of 12 o'clock, in degrees clockwise from north (x north, y west)."""
-    north, west, _ = quat.rotate(attitude, [0.0, 1.0, 0.0])
-    return float(np.degrees(np.arctan2(-west, north)) % 360)

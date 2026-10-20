@@ -5,10 +5,11 @@ Two layers arrive on the wire, with opposite byte orders:
     phone frame (big-endian)                     watch payload (little-endian)
     UInt32 length | UInt32 seq | Float64 time  | "WRSC" | version | tag | doubles... | tag | doubles... | ...
 
-The watch payload starts with the magic and format version, then records with no
-lengths: the tag says which source a record is from, and RECORDS below says how
-many doubles follow. That table and VERSION must match `Motion.Source`,
-`fieldCount` and `Format.version` in MotionDataTypes.swift.
+The payload starts with the magic and format version, which the phone adds, then the
+watch's records with no lengths: the tag says which source a record is from, and
+RECORDS below says how many doubles follow. RECORDS must match `Motion.SampleTag` and
+`SampleFormatter` in xcode/Shared/Motion; MAGIC and VERSION must match
+`ComputerFormatter` in the phone app.
 """
 
 import struct
@@ -24,7 +25,7 @@ VERSION = 1
 RECORDS: dict[int, tuple[Source, int]] = {
     1: (Source.ACCELEROMETER, 4),
     2: (Source.GYRO, 4),
-    3: (Source.DEVICE_MOTION, 18),
+    3: (Source.DEVICE_MOTION, 14),
 }
 _TAG_OF = {source: tag for tag, (source, _) in RECORDS.items()}
 _PAYLOAD_STRUCTS = {tag: struct.Struct(f"<{count}d") for tag, (_, count) in RECORDS.items()}
@@ -107,7 +108,7 @@ def decode_records(payload: bytes) -> list[Sample]:
 
 
 def encode_records(samples: list[Sample]) -> bytes:
-    """The watch's payload format. A channel missing from a sample is sent as NaN."""
+    """The payload the phone sends: the header, then the records. A missing channel is sent as NaN."""
     out = bytearray(MAGIC + bytes([VERSION]))
     for sample in samples:
         tag = _TAG_OF[sample.source]

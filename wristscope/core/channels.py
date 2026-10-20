@@ -2,7 +2,8 @@
 
 A channel is one scalar signal, such as gravity's x axis. Every channel belongs
 to exactly one source (the CoreMotion handler that produced it) and is plotted
-against that source's timestamps.
+against that source's timestamps. Within a source, channels are listed in the
+order the watch writes them.
 """
 
 from dataclasses import dataclass
@@ -37,11 +38,9 @@ FUNDAMENTAL_CHANNELS: tuple[Channel, ...] = (
     *_axes(Source.GYRO, "gyro", "Raw rotation rate", "rad/s"),
     # CMDeviceMotion
     *_axes(Source.DEVICE_MOTION, "motion.quaternion", "Quaternion", "", axes="wxyz"),
-    *_axes(Source.DEVICE_MOTION, "motion.rotation_rate", "Rotation rate", "rad/s"),
     *_axes(Source.DEVICE_MOTION, "motion.user_accel", "User acceleration", "g"),
+    *_axes(Source.DEVICE_MOTION, "motion.rotation_rate", "Rotation rate", "rad/s"),
     *_axes(Source.DEVICE_MOTION, "motion.gravity", "Gravity", "g"),
-    *_axes(Source.DEVICE_MOTION, "motion.magnetic_field", "Magnetic field", "µT"),
-    Channel("motion.heading", Source.DEVICE_MOTION, "Heading", "Heading", "°"),
 )
 
 CHANNELS: dict[str, Channel] = {channel.id: channel for channel in FUNDAMENTAL_CHANNELS}

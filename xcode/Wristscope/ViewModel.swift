@@ -7,6 +7,7 @@
 
 import Foundation
 import Observation
+import os
 
 
 /// Relays every frame from the watch to the computer, and reports how both ends are doing.
@@ -32,9 +33,31 @@ final class ViewModel {
     init() {
         let streamer = MotionStreamer()
         self.streamer = streamer
-        connectivity = WatchConnectivityManager(onFrame: { streamer.send($0) })
+        connectivity = WatchConnectivityManager(onFrame: { Self.relay($0, to: streamer) })
         streamer.onStatus = { [weak self] in self?.computerStatus = $0 }
         streamer.listen()
+    }
+}
+
+
+// MARK: - Relaying
+
+extension ViewModel {
+    /// Reads the kind byte the watch puts first, then sends the rest on with the computer's
+    /// header. Runs on WatchConnectivity's background queue.
+    nonisolated private static func relay(_ message: Data, to streamer: MotionStreamer) {
+        guard let first = message.first else {
+            AppLog.connectivity.error("Dropped an empty watch message")
+            return
+        }
+        guard let kind = MessageDataKind(rawValue: first) else {
+            AppLog.connectivity.error("Dropped a watch message of unknown kind \(first)")
+            return
+        }
+        switch kind {
+        case .live:
+            streamer.send(ComputerFormatter.payload(fromRecords: message.dropFirst()))
+        }
     }
 }
 

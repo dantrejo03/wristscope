@@ -72,5 +72,14 @@ struct ControlButton: View {
 
 #Preview {
     let session = try! HKWorkoutSession(healthStore: HKHealthStore(), configuration: HKWorkoutConfiguration())
-    WorkoutControlsView(store: Workout.Store(workout: session, kind: .tennis, sessionType: .live, sensor: Motion.Sensor(deliveringOn: Motion.queue)))
+    let config = Workout.Store.Config(
+        workout: session,
+        kind: .tennis,
+        sensor: Motion.Sensor(deliveringOn: Motion.queue),
+        connectivity: .shared,
+        sessionType: .live,
+        sampleRate: .hz100,
+        referenceFrame: .arbitrary
+    )
+    WorkoutControlsView(store: Workout.Store(config: config))
 }

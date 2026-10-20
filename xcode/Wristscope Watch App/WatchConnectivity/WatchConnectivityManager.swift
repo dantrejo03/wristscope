@@ -64,10 +64,6 @@ final class WatchConnectivityManager {
     }
 }
 
-nonisolated enum MessageDataKind: UInt8 {
-    case live = 1
-}
-
 
 // MARK: - Observation
 

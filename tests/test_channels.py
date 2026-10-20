@@ -8,8 +8,8 @@ def test_channel_ids_are_unique():
 def test_channel_counts_per_source():
     assert len(channels_for(Source.ACCELEROMETER)) == 3
     assert len(channels_for(Source.GYRO)) == 3
-    # quaternion 4 + rotation rate 3 + user accel 3 + gravity 3 + magnetic field 3 + heading 1
-    assert len(channels_for(Source.DEVICE_MOTION)) == 17
+    # quaternion 4 + user accel 3 + rotation rate 3 + gravity 3
+    assert len(channels_for(Source.DEVICE_MOTION)) == 13
 
 
 def test_channel_ids_start_with_their_source():

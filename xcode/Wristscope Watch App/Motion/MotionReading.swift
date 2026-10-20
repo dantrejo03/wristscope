@@ -15,6 +15,12 @@ import CoreMotion
 // Each `init(from:)` is in an extension so the memberwise init stays, for tests.
 
 extension Motion {
+    
+    nonisolated enum Reading {
+        case accelerometer(AccelerometerReading)
+        case gyro(GyroReading)
+        case deviceMotion(DeviceMotionReading)
+    }
 
     nonisolated struct AccelerometerReading: Sendable {
         let timestamp: TimeInterval

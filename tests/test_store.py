@@ -52,19 +52,19 @@ def test_rejects_sample_from_another_source():
 def test_store_keeps_each_source_on_its_own_timeline():
     store = MotionStore(capacity=8)
     store.add(Sample(Source.ACCELEROMETER, 0.00, {"accel.x": 0.5}))
-    store.add(Sample(Source.DEVICE_MOTION, 0.01, {"motion.heading": 90.0}))
+    store.add(Sample(Source.DEVICE_MOTION, 0.01, {"motion.gravity.z": -1.0}))
     store.add(Sample(Source.ACCELEROMETER, 0.02, {"accel.x": 0.6}))
 
     t, v = store.series("accel.x")
     assert t.tolist() == [0.0, 0.02]
     assert v.tolist() == [0.5, 0.6]
 
-    t, v = store.series("motion.heading")
+    t, v = store.series("motion.gravity.z")
     assert t.tolist() == [0.01]
-    assert v.tolist() == [90.0]
+    assert v.tolist() == [-1.0]
 
     assert store.latest_timestamp() == 0.02
-    assert store.latest("motion.heading") == 90.0
+    assert store.latest("motion.gravity.z") == -1.0
 
 
 def feed_gyro(store: MotionStore, times) -> None:

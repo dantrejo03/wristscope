@@ -61,21 +61,23 @@ extension Workout {
         @ObservationIgnored private var finishTask: Task<Void, Never>?
         
         
-        init(
-            workout: HKWorkoutSession,
-            kind: Workout.Kind,
-            sessionType: SessionType,
-            sensor: Motion.Sensor
-        ) {
-            self.workout = workout
-            self.kind = kind
-            self.sessionType = sessionType
-            self.metricsStore = Metrics.Store(workout: workout)
+        init(config: Config) {
+            self.workout = config.workout
+            self.kind = config.kind
+            self.sessionType = config.sessionType
+            self.metricsStore = Metrics.Store(workout: config.workout)
+
+            // Rep and workout sessions stream too, until they have their own sinks.
+            let sink = Motion.LiveSink(
+                connectivity: config.connectivity,
+                flushInterval: config.flushInterval,
+                capacity: config.capacity
+            )
             self.motionController = Motion.Controller(
-                sensor: sensor,
-                sink: <#T##any Motion.SampleSink#>,
-                updateInterval: <#T##Double#>,
-                referenceFrame: <#T##CMAttitudeReferenceFrame#>
+                sensor: config.sensor,
+                sink: sink,
+                updateInterval: config.sampleRate.updateInterval,
+                referenceFrame: config.referenceFrame.cmFrame
             )
             
             // Set before `beginCollection`, so no readings are missed
