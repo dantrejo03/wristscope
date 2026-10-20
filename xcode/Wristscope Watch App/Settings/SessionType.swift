@@ -64,4 +64,11 @@ extension SessionType {
         case .workout: return "flag.fill"
         }
     }
+    
+    var shouldShowInView: Bool {
+        switch self {
+        case .live: return true
+        case .rep, .workout: return false
+        }
+    }
 }

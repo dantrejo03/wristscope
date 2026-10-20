@@ -17,7 +17,7 @@ struct SettingsView: View {
         List {
             Section {
                 Picker("Session", selection: $sessionType) {
-                    ForEach(SessionType.allCases, id: \.self) { type in
+                    ForEach(SessionType.visibleCases, id: \.self) { type in
                         type.label.tag(type)
                     }
                 }
@@ -28,7 +28,7 @@ struct SettingsView: View {
 
             Section {
                 Picker("Sample Rate", selection: $sampleRate) {
-                    ForEach(SampleRate.allCases, id: \.self) { rate in
+                    ForEach(SampleRate.visibleCases, id: \.self) { rate in
                         Text(rate.title).tag(rate)
                     }
                 }

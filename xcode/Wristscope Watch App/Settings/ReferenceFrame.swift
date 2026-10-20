@@ -49,11 +49,18 @@ extension ReferenceFrame {
         }
     }
 
-    /// The frames this device can use and that the settings view offers. True north is left out
-    /// until the app asks for location permission.
+    /// True north is hidden until the app asks for location permission.
+    var shouldShowInView: Bool {
+        switch self {
+        case .arbitrary: return true
+        case .arbitraryCorrected, .magneticNorth, .trueNorth: return false
+        }
+    }
+
+    /// The frames this device can use and that the settings view offers.
     static var available: [ReferenceFrame] {
         let supported = CMMotionManager.availableAttitudeReferenceFrames()
-        return allCases.filter { $0 != .trueNorth && supported.contains($0.cmFrame) }
+        return visibleCases.filter { supported.contains($0.cmFrame) }
     }
 
     /// The saved frame, or the default if the saved one isn't available on this device.
