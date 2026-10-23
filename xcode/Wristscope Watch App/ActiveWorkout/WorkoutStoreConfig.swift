@@ -20,18 +20,27 @@ extension Workout.Store {
         let sessionType: SessionType
         let sampleRate: SampleRate
         let referenceFrame: ReferenceFrame
+        /// Logs every live message for the connectivity benchmark. Only debug builds turn it on.
+        let isBenchmarking: Bool
     }
 }
 
 
 extension Workout.Store.Config {
-    /// Reads the session type, sample rate and reference frame saved in settings.
+    /// Reads the session type, sample rate and reference frame saved in settings, and in debug
+    /// builds whether to benchmark.
     init(
         workout: HKWorkoutSession,
         kind: Workout.Kind,
         sensor: Motion.Sensor,
         connectivity: WatchConnectivityManager
     ) {
+        #if DEBUG
+        let isBenchmarking = BenchmarkSetting.isOn
+        #else
+        let isBenchmarking = false
+        #endif
+
         self.init(
             workout: workout,
             kind: kind,
@@ -39,7 +48,8 @@ extension Workout.Store.Config {
             connectivity: connectivity,
             sessionType: .current,
             sampleRate: .current,
-            referenceFrame: .currentAvailable
+            referenceFrame: .currentAvailable,
+            isBenchmarking: isBenchmarking
         )
     }
 
@@ -48,18 +58,18 @@ extension Workout.Store.Config {
     var flushInterval: TimeInterval {
         switch sessionType {
         // Rep and workout sessions use the live sink until they have their own.
-        case .live, .rep, .workout: 0.1
+        case .live, .rep, .workout: 1
         }
     }
 
-    /// Bytes for one flush interval of all three sensors at the sample rate, doubled so a
-    /// late flush doesn't drop samples.
+    /// Bytes for two seconds of all three sensors at the sample rate, or two flush intervals if
+    /// that's longer. It's sized by time because watchOS sometimes pauses the app, and when it
+    /// resumes every reading it missed arrives at once: the benchmark saw a 1.1 s pause, which
+    /// overflowed a buffer of two 50 ms flushes. Not much bigger, because a full buffer goes out
+    /// as one message and WatchConnectivity refuses messages that are too large.
     var capacity: Int {
-        // The 1 is each record's tag.
-        let bytesPerRound = Motion.SampleTag.allCases.reduce(0) {
-            $0 + 1 + Motion.SampleFormatter.byteSize(from: $1)
-        }
-        let bytesPerFlush = Double(bytesPerRound * sampleRate.hertz) * flushInterval
-        return Int((2 * bytesPerFlush).rounded(.up))
+        let bytesPerSecond = Motion.SampleFormatter.bytesPerRound * sampleRate.hertz
+        let seconds = max(2, 2 * flushInterval)
+        return Int((Double(bytesPerSecond) * seconds).rounded(.up))
     }
 }

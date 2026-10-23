@@ -12,6 +12,9 @@ struct SettingsView: View {
     @AppStorage(SessionType.key) private var sessionType = SessionType.defaultValue
     @AppStorage(SampleRate.key) private var sampleRate = SampleRate.defaultValue
     @AppStorage(ReferenceFrame.key) private var referenceFrame = ReferenceFrame.defaultValue
+    #if DEBUG || BETA
+    @AppStorage(BenchmarkSetting.key) private var isBenchmarking = false
+    #endif
 
     var body: some View {
         List {
@@ -47,6 +50,13 @@ struct SettingsView: View {
             } footer: {
                 explanation(ReferenceFrame.explanation)
             }
+
+            #if DEBUG || BETA
+            Section("Debug") {
+                Toggle("Benchmark", isOn: $isBenchmarking)
+                detail("Logs every live message and sends the log to the phone when the workout ends.")
+            }
+            #endif
         }
         .navigationTitle("Settings")
     }

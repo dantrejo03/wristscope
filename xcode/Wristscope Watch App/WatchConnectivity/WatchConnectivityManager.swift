@@ -40,27 +40,39 @@ final class WatchConnectivityManager {
         session.activate()
     }
     
-    nonisolated func sendLive(
-        _ data: Data, kind: MessageDataKind,
+    /// Throws a `WatchSessionError` without sending when the phone can't be reached right now.
+    /// Once sent, failures go to `onError` instead, on WatchConnectivity's queue.
+    nonisolated func sendMessage(
+        _ data: Data,
+        onReply: (@Sendable (Data) -> Void)? = nil,
         onError: (@Sendable (any Error) -> Void)? = nil
-    ) {
+    ) throws {
         guard WCSession.isSupported() else {
             AppLog.connectivity.info("WCSession is not supported on this device; live data not sent")
-            return
+            throw WatchSessionError.connectionNotSupported
         }
-        
-        // self.session has main actor isolation.
+
+        // self.session has main actor isolation
         let session = WCSession.default
         guard session.activationState == .activated, session.isReachable else {
-            return
+            throw WatchSessionError.phoneNotReachable
         }
-        
-        var message = Data()
-        message.reserveCapacity(1 + data.count)
-        message.append(kind.rawValue)
-        message.append(data)
-        
-        session.sendMessageData(message, replyHandler: nil, errorHandler: onError)
+
+        session.sendMessageData(data, replyHandler: onReply, errorHandler: onError)
+    }
+
+    /// Queues `url` for the phone. WatchConnectivity keeps trying in the background after this
+    /// returns, and the file is deleted once it arrives.
+    nonisolated func transferFile(_ url: URL, metadata: [String: Any]? = nil) throws {
+        guard WCSession.isSupported() else {
+            throw WatchSessionError.connectionNotSupported
+        }
+        // Transferring on a session that isn't activated is a programmer error.
+        let session = WCSession.default
+        guard session.activationState == .activated else {
+            throw WatchSessionError.notActivated
+        }
+        session.transferFile(url, metadata: metadata)
     }
 }
 
@@ -160,63 +172,3 @@ nonisolated final class WatchConnectivityObserver: NSObject, WCSessionDelegate {
         continuation.yield(.fileTransferFinished(fileTransfer.file.fileURL, error: error))
     }
 }
-
-
-
-
-
-
-
-
-//@Observable
-//final class WatchConnectivityManager {
-//    
-//    static let shared = WatchConnectivityManager()
-//    
-//    private(set) var connection: ConnectionState
-//    
-//    @ObservationIgnored private let session: WCSession?
-//    
-//    @ObservationIgnored private let delegate = WatchConnectivityObserver()
-//    
-//    @ObservationIgnored private var observationTask: Task<Void, Never>?
-//    
-//    private init() {
-//        session = WCSession.isSupported() ? WCSession.default : nil
-//        connection = session == nil ? .failed(nil) : .activating
-//        session?.delegate = delegate
-//        setUpObservationTask()
-//        session?.activate()
-//    }
-//    
-//    deinit {
-//        observationTask?.cancel()
-//    }
-//    
-//    /// Reactivates after a failed activation. A no-op in any other state, or where
-//    /// `WCSession` is unsupported, since that failure is permanent.
-//    func retryActivation() {
-//        guard case .failed = connection, let session else { return }
-//        connection = .activating
-//        session.activate()
-//    }
-//    
-//    /// Returns false if the frame was dropped because the session isn't
-//    /// activated or the phone isn't reachable right now.
-//    @discardableResult
-//    nonisolated func sendFrame(
-//        _ frame: Data,
-//        onError: (@Sendable (any Error) -> Void)? = nil
-//    ) -> Bool {
-//        guard WCSession.isSupported() else { return false }
-//        let session = WCSession.default
-//        guard session.activationState == .activated, session.isReachable else {
-//            return false
-//        }
-//        session.sendMessageData(frame, replyHandler: nil, errorHandler: onError)
-//        return true
-//    }
-//}
-//
-//
-

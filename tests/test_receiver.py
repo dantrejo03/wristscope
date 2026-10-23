@@ -10,7 +10,7 @@ from wristscope.core.channels import Source
 from wristscope.core.samples import Sample
 from wristscope.sources import receiver
 from wristscope.sources.receiver import WatchFeed
-from wristscope.transport.wire import encode_frame, encode_records
+from wristscope.transport.wire import encode_frame, encode_payload
 from wristscope.transport import usbmux
 
 
@@ -36,12 +36,13 @@ def gyro(t):
     return Sample(Source.GYRO, t, {"gyro.x": t})
 
 
-def frame(seq, samples):
-    return encode_frame(encode_records(samples), seq, 0.0)
+def frame(seq, samples, watch_seq=None):
+    """A frame as the phone sends it. With nothing lost, the watch's numbers keep pace with the phone's."""
+    return encode_frame(encode_payload(samples, seq if watch_seq is None else watch_seq), seq, 0.0)
 
 
-def send(sock, seq, samples):
-    sock.write(frame(seq, samples))
+def send(sock, seq, samples, watch_seq=None):
+    sock.write(frame(seq, samples, watch_seq))
     sock.flush()
 
 
@@ -102,13 +103,24 @@ def test_samples_arrive_in_poll(feed, phone):
     assert feed.status().startswith("Streaming from iPhone at 127.0.0.1")
 
 
-def test_sequence_gap_counts_dropped_frames(feed, phone):
+def test_phone_gap_counts_frames_lost_after_the_phone(feed, phone):
     sock = connect(feed, phone)
     for seq in (5, 6, 9):
         send(sock, seq, [gyro(seq)])
     pump(lambda: feed.frames == 3)
-    assert feed.dropped_frames == 2
-    assert "2 frames dropped" in feed.status()
+    assert feed.phone_frames.dropped == 2 and feed.lost_before_phone == 0
+    assert "2 lost phone→Mac" in feed.status()
+    assert "watch→phone" not in feed.status()
+
+
+def test_watch_gap_counts_messages_lost_before_the_phone(feed, phone):
+    sock = connect(feed, phone)
+    for seq, watch_seq in ((0, 0), (1, 1), (2, 4)):
+        send(sock, seq, [gyro(seq)], watch_seq)
+    pump(lambda: feed.frames == 3)
+    assert feed.lost_before_phone == 2 and feed.phone_frames.dropped == 0
+    assert "2 lost watch→phone" in feed.status()
+    assert "phone→Mac" not in feed.status()
 
 
 def test_sequence_restart_is_not_a_drop(feed, phone):
@@ -116,7 +128,15 @@ def test_sequence_restart_is_not_a_drop(feed, phone):
     for seq in (50, 51, 0, 1):
         send(sock, seq, [gyro(seq)])
     pump(lambda: feed.frames == 4)
-    assert feed.dropped_frames == 0 and feed.phone_restarts == 1
+    assert feed.phone_frames.dropped == 0 and feed.phone_frames.restarts == 1
+
+
+def test_new_workout_on_the_watch_is_not_a_drop(feed, phone):
+    sock = connect(feed, phone)
+    for seq, watch_seq in ((10, 50), (11, 51), (12, 0), (13, 1)):
+        send(sock, seq, [gyro(seq)], watch_seq)
+    pump(lambda: feed.frames == 4)
+    assert feed.watch_messages.restarts == 1 and feed.lost_before_phone == 0
 
 
 def test_late_frame_is_not_a_drop_or_restart(feed, phone):
@@ -124,7 +144,8 @@ def test_late_frame_is_not_a_drop_or_restart(feed, phone):
     for seq in (3, 5, 4, 6):
         send(sock, seq, [gyro(seq)])
     pump(lambda: feed.frames == 4)
-    assert feed.dropped_frames == 0 and feed.phone_restarts == 0
+    assert feed.phone_frames.dropped == 0 and feed.phone_frames.restarts == 0
+    assert feed.lost_before_phone == 0
 
 
 def test_reconnects_and_counts_the_gap(feed, phone):
@@ -136,7 +157,7 @@ def test_reconnects_and_counts_the_gap(feed, phone):
     second = connect(feed, phone)
     send(second, 4, [gyro(4)])
     pump(lambda: feed.frames == 2)
-    assert feed.dropped_frames == 3
+    assert feed.phone_frames.dropped == 3 and feed.lost_before_phone == 0
 
 
 def test_reconnect_starts_with_fresh_splitter(feed, phone):
@@ -164,7 +185,7 @@ def test_garbage_length_closes_connection_then_reconnects(feed, phone):
 
 def test_bad_frame_keeps_earlier_samples_and_carries_on(feed, phone):
     sock = connect(feed, phone)
-    good = encode_records([gyro(1.0)])
+    good = encode_payload([gyro(1.0)])
     sock.write(encode_frame(good + bytes([99]), 0, 0.0))
     sock.write(frame(1, [gyro(2.0)]))
     sock.flush()
@@ -175,10 +196,10 @@ def test_bad_frame_keeps_earlier_samples_and_carries_on(feed, phone):
 
 def test_wrong_version_is_reported(feed, phone):
     sock = connect(feed, phone)
-    sock.write(encode_frame(b"WRSC\x02", 0, 0.0))
+    sock.write(encode_frame(b"WRSC\x01", 0, 0.0))
     sock.flush()
     pump(lambda: feed.bad_frames == 1)
-    assert "v2" in feed.status()
+    assert "v1" in feed.status()
 
 
 # MARK: Over USB through usbmuxd

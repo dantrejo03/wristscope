@@ -27,6 +27,8 @@ extension Workout {
         
         // MARK: Motion
         @ObservationIgnored let motionController: Motion.Controller
+        /// Nil unless benchmarking is on. `finish(at:)` sends its log to the phone.
+        @ObservationIgnored private let benchmark: ConnectivityBenchmark?
         /// Set while a pause has the sensors stopped. `state` can't say this, since it doesn't
         /// follow pause events while another screen is up.
         @ObservationIgnored private var isMotionPaused = false
@@ -67,11 +69,21 @@ extension Workout {
             self.sessionType = config.sessionType
             self.metricsStore = Metrics.Store(workout: config.workout)
 
+            let benchmark = config.isBenchmarking
+                ? ConnectivityBenchmark(
+                    connectivity: config.connectivity,
+                    flushInterval: config.flushInterval,
+                    sampleRate: config.sampleRate.hertz
+                )
+                : nil
+            self.benchmark = benchmark
+
             // Rep and workout sessions stream too, until they have their own sinks.
             let sink = Motion.LiveSink(
                 connectivity: config.connectivity,
                 flushInterval: config.flushInterval,
-                capacity: config.capacity
+                capacity: config.capacity,
+                benchmark: benchmark
             )
             self.motionController = Motion.Controller(
                 sensor: config.sensor,
@@ -121,6 +133,9 @@ extension Workout {
                     } catch {
 
                     }
+                    // After saving, which gives the last flush time to be logged. Before ending,
+                    // while the session still keeps the app running to write the file.
+                    benchmark?.finish()
                     workout.end()
                 }
             }

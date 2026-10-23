@@ -5,11 +5,12 @@ way the phone does and sends a frame every 100 ms. Like the phone app, it listen
 on port 9000 and the desktop app connects to it; run that with
 `wristscope --phone localhost`.
 
-    python tools/fake_phone.py                     # clean stream on localhost:9000
-    python tools/fake_phone.py --lose-on-phone 0.1 # phone drops 10% of frames (sequence gaps)
-    python tools/fake_phone.py --lose-on-watch 0.1 # watch drops 10% (only timestamp gaps show it)
-    python tools/fake_phone.py --reorder 0.1       # swaps 10% of frames with the next one
-    python tools/fake_phone.py --restart-every 15  # watch and phone app restart every 15 s
+    python tools/fake_phone.py                       # clean stream on localhost:9000
+    python tools/fake_phone.py --lose-on-phone 0.1   # phone drops 10% of frames (phone sequence gaps)
+    python tools/fake_phone.py --lose-in-transit 0.1 # WatchConnectivity loses 10% (watch sequence gaps)
+    python tools/fake_phone.py --lose-on-watch 0.1   # watch out of range for 10% (only timestamp gaps show it)
+    python tools/fake_phone.py --reorder 0.1         # swaps 10% of frames with the next one
+    python tools/fake_phone.py --restart-every 15    # watch and phone app restart every 15 s
 """
 
 import argparse
@@ -18,7 +19,7 @@ import socket
 import time
 
 from wristscope.feeds.simulator import MOTIONS, Simulator
-from wristscope.transport.wire import encode_frame, encode_records
+from wristscope.transport.wire import encode_frame, encode_payload
 
 FRAME_INTERVAL = 0.1
 
@@ -56,6 +57,7 @@ def main() -> None:
     parser.add_argument("--motion", choices=MOTIONS, default="wander")
     parser.add_argument("--rate", type=float, default=100.0)
     parser.add_argument("--lose-on-phone", type=probability, default=0.0, metavar="P")
+    parser.add_argument("--lose-in-transit", type=probability, default=0.0, metavar="P")
     parser.add_argument("--lose-on-watch", type=probability, default=0.0, metavar="P")
     parser.add_argument("--reorder", type=probability, default=0.0, metavar="P")
     parser.add_argument("--restart-every", type=float, default=0.0, metavar="SECONDS")
@@ -67,7 +69,8 @@ def main() -> None:
     watch = new_watch()
     server = listen(args.host, args.port)
     sock: socket.socket | None = None
-    seq = 0
+    seq = 0  # the phone's, one per frame
+    watch_seq = 0  # the watch's, one per message WatchConnectivity takes
     started = time.monotonic()
     held: bytes | None = None  # a frame being delayed past its successor
     next_send = time.monotonic()
@@ -76,7 +79,7 @@ def main() -> None:
             next_send += FRAME_INTERVAL
             time.sleep(max(0.0, next_send - time.monotonic()))
             if args.restart_every and time.monotonic() - started > args.restart_every:
-                watch, seq, started, held = new_watch(), 0, time.monotonic(), None
+                watch, seq, watch_seq, started, held = new_watch(), 0, 0, time.monotonic(), None
                 print("restarted")
 
             newest = accept(server)
@@ -87,8 +90,12 @@ def main() -> None:
 
             samples = watch.poll()
             if not samples or random.random() < args.lose_on_watch:
-                continue  # the watch never sent it, so the phone never numbers it
-            frame = encode_frame(encode_records(samples), seq, time.time())
+                continue  # out of range: the watch never sent it, so it used no number
+            payload = encode_payload(samples, watch_seq)
+            watch_seq += 1
+            if random.random() < args.lose_in_transit:
+                continue  # WatchConnectivity took it but never delivered it, so the phone never numbers it
+            frame = encode_frame(payload, seq, time.time())
             seq += 1
             if sock is None or random.random() < args.lose_on_phone:
                 continue  # the phone numbered it, then dropped it

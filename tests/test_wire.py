@@ -1,21 +1,26 @@
 import math
+from pathlib import Path
 
 import pytest
 
-from wristscope.core.channels import Source, channels_for
+from wristscope.core.channels import CHANNELS, Source, channels_for
 from wristscope.core.samples import Sample
 from wristscope.transport.wire import (
     MAGIC,
     MAX_FRAME_BYTES,
-    VERSION,
+    PAYLOAD_HEADER_BYTES,
     RECORDS,
+    VERSION,
     FrameSplitter,
+    Payload,
     PayloadError,
     WireError,
-    decode_records,
+    decode_payload,
     encode_frame,
-    encode_records,
+    encode_payload,
 )
+
+FIXTURES = Path(__file__).parent / "fixtures"
 
 
 def make_sample(source: Source, timestamp: float = 12.5) -> Sample:
@@ -24,80 +29,126 @@ def make_sample(source: Source, timestamp: float = 12.5) -> Sample:
 
 ALL_SAMPLES = [make_sample(Source.ACCELEROMETER, 1.0), make_sample(Source.GYRO, 2.0), make_sample(Source.DEVICE_MOTION, 3.0)]
 
+# What tools/swift_fixtures/main.swift puts in tests/fixtures/live_payload.bin, with watch seq 41
+SWIFT_SAMPLES = [
+    Sample(Source.DEVICE_MOTION, 1000.25, {
+        "motion.quaternion.w": 0.5, "motion.quaternion.x": -0.5, "motion.quaternion.y": 0.25, "motion.quaternion.z": -0.25,
+        "motion.user_accel.x": 0.125, "motion.user_accel.y": -0.125, "motion.user_accel.z": 1.5,
+        "motion.rotation_rate.x": 2.0, "motion.rotation_rate.y": -2.0, "motion.rotation_rate.z": 0.75,
+        "motion.gravity.x": 0.0, "motion.gravity.y": -0.5, "motion.gravity.z": -1.0,
+    }),
+    Sample(Source.ACCELEROMETER, 1000.5, {"accel.x": 0.1, "accel.y": 0.2, "accel.z": -0.98}),
+    Sample(Source.GYRO, 1000.75, {"gyro.x": -0.3, "gyro.y": 0.4, "gyro.z": 0.05}),
+]
 
-def test_record_table_matches_channels():
-    # Every source needs a tag, and its size must be timestamp + one double per channel.
-    assert {source for source, _ in RECORDS.values()} == set(Source)
-    for source, count in RECORDS.values():
-        assert count == 1 + len(channels_for(source))
+
+def test_every_channel_is_in_exactly_one_record():
+    ids = [c.id for channels in RECORDS.values() for c in channels]
+    assert sorted(ids) == sorted(CHANNELS)
 
 
-def test_swift_tags_and_sizes():
-    # Locked to Motion.SampleTag and SampleFormatter in xcode/Shared/Motion.
-    assert {tag: (source, count) for tag, (source, count) in RECORDS.items()} == {
-        1: (Source.ACCELEROMETER, 4),
-        2: (Source.GYRO, 4),
-        3: (Source.DEVICE_MOTION, 14),
+def test_a_record_holds_one_source():
+    for channels in RECORDS.values():
+        assert len({c.source for c in channels}) == 1
+
+
+def test_swift_tags_and_layout():
+    # Locked to Motion.Sample.tag in xcode/Shared/Motion/MotionTypes.swift: each tag's channels,
+    # in the order the Swift vector holds them.
+    assert {tag: [c.id for c in channels] for tag, channels in RECORDS.items()} == {
+        1: ["accel.x", "accel.y", "accel.z"],
+        2: ["motion.user_accel.x", "motion.user_accel.y", "motion.user_accel.z"],
+        3: ["gyro.x", "gyro.y", "gyro.z"],
+        4: ["motion.rotation_rate.x", "motion.rotation_rate.y", "motion.rotation_rate.z"],
+        5: ["motion.quaternion.w", "motion.quaternion.x", "motion.quaternion.y", "motion.quaternion.z"],
+        6: ["motion.gravity.x", "motion.gravity.y", "motion.gravity.z"],
     }
 
 
-def test_device_motion_field_order():
-    # Swift writes: timestamp, quaternion wxyz, user accel xyz, rotation xyz, gravity xyz.
-    ids = [c.id for c in channels_for(Source.DEVICE_MOTION)]
-    assert ids[0] == "motion.quaternion.w" and ids[3] == "motion.quaternion.z"
-    assert ids[4:7] == [f"motion.user_accel.{a}" for a in "xyz"]
-    assert ids[7:10] == [f"motion.rotation_rate.{a}" for a in "xyz"]
-    assert ids[10:13] == [f"motion.gravity.{a}" for a in "xyz"]
-    assert len(ids) == 13
+def test_decodes_what_the_swift_code_writes():
+    # The fixture was written by the real Swift formatters. Rerun tools/swift_fixtures/generate.sh
+    # after changing the format on either side.
+    assert decode_payload((FIXTURES / "live_payload.bin").read_bytes()) == Payload(41, SWIFT_SAMPLES)
+
+
+def test_encodes_what_the_swift_code_writes():
+    assert encode_payload(SWIFT_SAMPLES, 41) == (FIXTURES / "live_payload.bin").read_bytes()
 
 
 def test_known_bytes_are_little_endian():
-    payload = MAGIC + bytes([VERSION, 1]) + bytes.fromhex("000000000000f03f") * 4  # tag 1, four 1.0 doubles
-    [sample] = decode_records(payload)
-    assert sample == Sample(Source.ACCELEROMETER, 1.0, {"accel.x": 1.0, "accel.y": 1.0, "accel.z": 1.0})
+    one = bytes.fromhex("000000000000f03f")  # 1.0
+    payload = MAGIC + bytes([VERSION]) + bytes.fromhex("07000000") + bytes([1]) + one * 4  # seq 7, tag 1
+    expected = Sample(Source.ACCELEROMETER, 1.0, {"accel.x": 1.0, "accel.y": 1.0, "accel.z": 1.0})
+    assert decode_payload(payload) == Payload(7, [expected])
 
 
 @pytest.mark.parametrize("sample", ALL_SAMPLES)
 def test_record_round_trip(sample):
-    assert decode_records(encode_records([sample])) == [sample]
+    assert decode_payload(encode_payload([sample], 3)) == Payload(3, [sample])
 
 
 def test_several_records_round_trip():
-    assert decode_records(encode_records(ALL_SAMPLES * 2)) == ALL_SAMPLES * 2
+    assert decode_payload(encode_payload(ALL_SAMPLES * 2)).samples == ALL_SAMPLES * 2
+
+
+def test_one_sensor_event_becomes_one_sample():
+    # A device-motion event goes as four records with the same timestamp: attitude's 4 values
+    # and three vectors of 3, each with the timestamp in front.
+    payload = encode_payload([ALL_SAMPLES[2]])
+    assert len(payload) == PAYLOAD_HEADER_BYTES + (1 + 5 * 8) + 3 * (1 + 4 * 8)
+    [sample] = decode_payload(payload).samples
+    assert len(sample.values) == len(channels_for(Source.DEVICE_MOTION))
+
+
+def test_different_timestamps_stay_apart():
+    first, second = make_sample(Source.GYRO, 1.0), make_sample(Source.GYRO, 1.01)
+    assert decode_payload(encode_payload([first, second])).samples == [first, second]
+
+
+def test_different_sources_stay_apart():
+    accel, gyro = make_sample(Source.ACCELEROMETER, 1.0), make_sample(Source.GYRO, 1.0)
+    assert decode_payload(encode_payload([accel, gyro])).samples == [accel, gyro]
 
 
 def test_header_only_payload_has_no_samples():
-    assert decode_records(MAGIC + bytes([VERSION])) == []
+    assert decode_payload(encode_payload([], 9)) == Payload(9, [])
 
 
 def test_missing_magic():
     with pytest.raises(PayloadError):
-        decode_records(b"")
+        decode_payload(b"")
     with pytest.raises(PayloadError):
-        decode_records(b"NOPE" + bytes([VERSION]))
+        decode_payload(b"NOPE" + bytes([VERSION]))
 
 
 def test_other_version_is_named():
-    with pytest.raises(PayloadError, match="v2"):
-        decode_records(MAGIC + bytes([2]))
+    with pytest.raises(PayloadError, match="v1"):
+        decode_payload(MAGIC + bytes([1]))
+
+
+def test_too_short_for_the_watch_seq():
+    with pytest.raises(PayloadError) as info:
+        decode_payload(MAGIC + bytes([VERSION, 0, 0]))
+    assert info.value.watch_seq is None
 
 
 def test_missing_channel_encodes_as_nan():
-    [decoded] = decode_records(encode_records([Sample(Source.GYRO, 1.0, {"gyro.y": 2.0})]))
+    [decoded] = decode_payload(encode_payload([Sample(Source.GYRO, 1.0, {"gyro.y": 2.0})])).samples
     assert decoded.values["gyro.y"] == 2.0
     assert math.isnan(decoded.values["gyro.x"])
 
 
 def test_unknown_tag_keeps_earlier_samples():
     with pytest.raises(PayloadError) as info:
-        decode_records(encode_records([ALL_SAMPLES[0]]) + bytes([99]) + bytes(32))
+        decode_payload(encode_payload([ALL_SAMPLES[0]], 5) + bytes([99]) + bytes(32))
     assert info.value.samples == [ALL_SAMPLES[0]]
+    assert info.value.watch_seq == 5
 
 
 def test_truncated_record():
-    payload = encode_records([ALL_SAMPLES[2]])
+    gyro_record = encode_payload([ALL_SAMPLES[1]])[PAYLOAD_HEADER_BYTES:]
     with pytest.raises(PayloadError) as info:
-        decode_records(encode_records([ALL_SAMPLES[0]]) + payload[len(MAGIC) + 1 : -1])
+        decode_payload(encode_payload([ALL_SAMPLES[0]]) + gyro_record[:-1])
     assert info.value.samples == [ALL_SAMPLES[0]]
 
 
@@ -118,12 +169,12 @@ def test_several_frames_in_one_chunk():
 
 
 def test_frames_split_at_every_byte():
-    data = encode_frame(encode_records(ALL_SAMPLES), 1, 1.0) + encode_frame(encode_records(ALL_SAMPLES[:1]), 2, 2.0)
+    data = encode_frame(encode_payload(ALL_SAMPLES), 1, 1.0) + encode_frame(encode_payload(ALL_SAMPLES[:1]), 2, 2.0)
     for cut in range(len(data) + 1):
         splitter = FrameSplitter()
         frames = splitter.feed(data[:cut]) + splitter.feed(data[cut:])
         assert [f.seq for f in frames] == [1, 2], cut
-        assert decode_records(frames[0].payload) == ALL_SAMPLES
+        assert decode_payload(frames[0].payload).samples == ALL_SAMPLES
 
 
 def test_one_byte_at_a_time():

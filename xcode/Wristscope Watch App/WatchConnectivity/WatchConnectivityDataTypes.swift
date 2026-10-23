@@ -22,3 +22,10 @@ nonisolated enum ConnectionState: Sendable, Equatable {
     case failed(WCError.Code?)
     case activated(isReachable: Bool, isCompanionAppInstalled: Bool)
 }
+
+nonisolated enum WatchSessionError: Error {
+    case phoneNotReachable
+    case connectionNotSupported
+    case notActivated
+}
+

@@ -7,6 +7,7 @@
 
 import SwiftUI
 
+
 struct RootView: View {
     var applicationStore: ApplicationStore
     

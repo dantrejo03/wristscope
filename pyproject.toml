@@ -12,8 +12,9 @@ requires-python = ">=3.11"
 dependencies = ["numpy", "pyqtgraph>=0.14,<0.15", "PySide6", "PyOpenGL"]
 
 [project.optional-dependencies]
-# trimesh is only needed to rerun tools/convert_watch_model.py.
-dev = ["pytest", "trimesh"]
+# trimesh is only needed to rerun tools/convert_watch_model.py, and matplotlib to redraw the
+# benchmark figures with tools/benchmark_plots.py.
+dev = ["pytest", "trimesh", "matplotlib"]
 
 [project.scripts]
 wristscope = "wristscope.__main__:main"

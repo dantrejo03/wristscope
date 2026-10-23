@@ -48,6 +48,8 @@ extension Motion {
 }
 
 
+// MARK: - Conversion from CoreMotion types
+
 extension Motion.AccelerometerReading {
     nonisolated init(from data: CMAccelerometerData) {
         self.init(timestamp: data.timestamp, acceleration: data.acceleration)
@@ -76,3 +78,4 @@ extension Motion.DeviceMotionReading {
         )
     }
 }
+

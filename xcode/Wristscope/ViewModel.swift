@@ -43,20 +43,26 @@ final class ViewModel {
 // MARK: - Relaying
 
 extension ViewModel {
-    /// Reads the kind byte the watch puts first, then sends the rest on with the computer's
-    /// header. Runs on WatchConnectivity's background queue.
+    /// Reads the kind byte the watch puts first, then sends the watch's sequence number and the
+    /// records after its header on with the computer's header. Runs on WatchConnectivity's
+    /// background queue.
     nonisolated private static func relay(_ message: Data, to streamer: MotionStreamer) {
         guard let first = message.first else {
             AppLog.connectivity.error("Dropped an empty watch message")
             return
         }
-        guard let kind = MessageDataKind(rawValue: first) else {
+        guard let kind = MessageKind(rawValue: first) else {
             AppLog.connectivity.error("Dropped a watch message of unknown kind \(first)")
             return
         }
         switch kind {
         case .live:
-            streamer.send(ComputerFormatter.payload(fromRecords: message.dropFirst()))
+            guard let sequence = MessageFormatter.liveSequence(of: message) else {
+                AppLog.connectivity.error("Dropped a live watch message too short for its header")
+                return
+            }
+            let records = message.dropFirst(MessageFormatter.liveHeaderSize)
+            streamer.send(ComputerFormatter.payload(watchSequence: sequence, records: records))
         }
     }
 }

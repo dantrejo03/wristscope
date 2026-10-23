@@ -79,7 +79,8 @@ struct ControlButton: View {
         connectivity: .shared,
         sessionType: .live,
         sampleRate: .hz100,
-        referenceFrame: .arbitrary
+        referenceFrame: .arbitrary,
+        isBenchmarking: false
     )
     WorkoutControlsView(store: Workout.Store(config: config))
 }

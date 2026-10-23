@@ -129,4 +129,30 @@ nonisolated final class WatchConnectivityObserver: NSObject, WCSessionDelegate {
         onFrame(messageData)
         continuation.yield(.frameReceived)
     }
+
+    /// With benchmarking on, the watch sends frames with a reply handler, which arrive here
+    /// instead. The reply goes first, so the watch's round trip doesn't include the relay.
+    func session(
+        _ session: WCSession,
+        didReceiveMessageData messageData: Data,
+        replyHandler: @escaping (Data) -> Void
+    ) {
+        replyHandler(Data())
+        onFrame(messageData)
+        continuation.yield(.frameReceived)
+    }
+
+    /// WatchConnectivity deletes the file once this returns, so it's moved now. Documents is the
+    /// folder the Files app shows as On My iPhone › Wristscope.
+    func session(_ session: WCSession, didReceive file: WCSessionFile) {
+        let name = file.fileURL.lastPathComponent
+        do {
+            try FileManager.default.moveItem(
+                at: file.fileURL,
+                to: URL.documentsDirectory.appending(path: name)
+            )
+        } catch {
+            AppLog.connectivity.error("Saving \(name) from the watch failed: \(error.localizedDescription)")
+        }
+    }
 }

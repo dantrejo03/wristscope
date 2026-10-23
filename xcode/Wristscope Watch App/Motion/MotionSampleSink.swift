@@ -41,15 +41,24 @@ extension Motion {
 
         /// Seconds between flushes, whatever the sample rate.
         private let flushInterval: TimeInterval
+        
+        /// The next message's. Goes up only once WatchConnectivity takes a message, so a gap the
+        /// phone sees is a message that was sent and lost.
+        private var sequenceNumber: UInt32 = 0
+
+        /// Nil unless benchmarking is on. Supplies the reply and error handlers when it isn't.
+        private let benchmark: ConnectivityBenchmark?
 
         /// `nonisolated` so the main actor can create one without awaiting.
         nonisolated init(
             connectivity: WatchConnectivityManager,
             flushInterval: TimeInterval,
-            capacity: Int
+            capacity: Int,
+            benchmark: ConnectivityBenchmark?
         ) {
             self.connectivity = connectivity
             self.flushInterval = flushInterval
+            self.benchmark = benchmark
 
             var buffer = ContiguousArray<UInt8>()
             buffer.reserveCapacity(capacity)
@@ -76,20 +85,35 @@ extension Motion {
         }
         
         func receive(_ reading: Motion.Reading) {
-            let sample = Formatter.sample(from: reading)
-            
-            let difference = Formatter.hasRoom(in: buffer, for: sample.tag)
+            let record = Formatter.record(from: reading)
+
+            let difference = Formatter.hasRoom(in: buffer, for: record)
             if difference >= 0 {
-                Formatter.unsafePackageBytes(from: sample, to: &buffer)
+                Formatter.unsafeAppend(record, to: &buffer)
             } else {
-                AppLog.motion.error("Buffer full, dropping \(sample.tag.name) sample (\(-difference) bytes short)")
+                AppLog.motion.error("Buffer full, dropping a record (\(-difference) bytes short)")
             }
         }
 
         private func flush() {
             guard !buffer.isEmpty else { return }
-            connectivity.sendLive(Data(buffer), kind: .live)
+            var data = MessageFormatter.liveHeader(sequenceNumber)
+            data.append(contentsOf: buffer)
             buffer.removeAll(keepingCapacity: true)
+
+            do {
+                try connectivity.sendMessage(
+                    data,
+                    onReply: benchmark?.replyHandler(for: sequenceNumber),
+                    onError: benchmark?.errorHandler(for: sequenceNumber)
+                )
+            } catch {
+                // Never sent, so the next message reuses this number.
+                benchmark?.notSent(error)
+                return
+            }
+            benchmark?.sent(sequenceNumber, bytes: data.count)
+            sequenceNumber &+= 1
         }
         
         

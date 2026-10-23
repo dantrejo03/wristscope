@@ -15,16 +15,40 @@ from PySide6 import QtCore, QtNetwork
 
 from wristscope.core.samples import Sample
 from wristscope.transport import usbmux
-from wristscope.transport.wire import FrameSplitter, PayloadError, WireError, decode_records
+from wristscope.transport.wire import FrameSplitter, PayloadError, WireError, decode_payload
 
 log = logging.getLogger(__name__)
 
 PORT = 9000  # the iPhone app listens here
 RETRY_SECONDS = 1.0
 DIAL_TIMEOUT_SECONDS = 5.0
-LATE_FRAMES = 8  # a frame this far behind is late; further back means the phone restarted
+LATE_FRAMES = 8  # a number this far behind arrived late; further back means the sender restarted
 
 Socket = QtNetwork.QTcpSocket | QtNetwork.QLocalSocket
+
+
+class SequenceTracker:
+    """Counts the numbers missing from a sequence that goes up by one per message.
+
+    A number a little behind the expected one arrived after its successor: it was counted as
+    dropped, so that's taken back. One further behind means the sender started again from 0.
+    """
+
+    def __init__(self) -> None:
+        self.dropped = 0
+        self.restarts = 0
+        self._expected: int | None = None
+
+    def note(self, seq: int) -> None:
+        if self._expected is not None:
+            if seq > self._expected:
+                self.dropped += seq - self._expected
+            elif seq < self._expected:
+                if self._expected - seq <= LATE_FRAMES:
+                    self.dropped = max(0, self.dropped - 1)
+                    return
+                self.restarts += 1
+        self._expected = seq + 1
 
 
 class WatchFeed(QtCore.QObject):
@@ -42,13 +66,14 @@ class WatchFeed(QtCore.QObject):
         self._device: int | None = None  # the USB device being connected to, once usbmuxd has listed it
         self._mux_buffer = bytearray()
         self._splitter = FrameSplitter()
-        self._expected_seq: int | None = None  # kept across connections so a reconnect shows up as a gap
         self._hint = ""  # why there's no connection yet
         self._closed = False
         self.frames = 0
-        self.dropped_frames = 0
         self.bad_frames = 0
-        self.phone_restarts = 0
+        # Both kept across connections, so a reconnect shows up as a gap. The phone numbers the
+        # frames it sends this Mac; the watch numbers the messages WatchConnectivity took.
+        self.phone_frames = SequenceTracker()
+        self.watch_messages = SequenceTracker()
         self.last_error = ""
 
         self._retry = QtCore.QTimer(self)
@@ -75,11 +100,22 @@ class WatchFeed(QtCore.QObject):
                 text += f" · {self._hint}"
         else:
             text = f"Streaming from iPhone {route}"
-        if self.dropped_frames:
-            text += f" · {self.dropped_frames} frames dropped"
+        if self.lost_before_phone:
+            text += f" · {self.lost_before_phone} lost watch→phone"
+        if self.phone_frames.dropped:
+            text += f" · {self.phone_frames.dropped} lost phone→Mac"
         if self.last_error:
             text += f" · {self.last_error}"
         return text
+
+    @property
+    def lost_before_phone(self) -> int:
+        """Messages WatchConnectivity took on the watch but never delivered to the phone.
+
+        A message lost anywhere leaves a gap in the watch's numbers. One the phone dropped also
+        leaves a gap in the phone's, so those are taken out.
+        """
+        return max(0, self.watch_messages.dropped - self.phone_frames.dropped)
 
     def close(self) -> None:
         self._closed = True
@@ -214,24 +250,17 @@ class WatchFeed(QtCore.QObject):
             self._lost(sock)  # reconnect and start clean
             return
         for frame in frames:
-            self._note_sequence(frame.seq)
+            self.phone_frames.note(frame.seq)
             self.frames += 1
             try:
-                self._pending += decode_records(frame.payload)
+                payload = decode_payload(frame.payload)
             except PayloadError as error:
                 self.bad_frames += 1
                 self.last_error = str(error)
                 log.warning("bad frame %d: %s", frame.seq, error)
+                if error.watch_seq is not None:
+                    self.watch_messages.note(error.watch_seq)
                 self._pending += error.samples
-
-    def _note_sequence(self, seq: int) -> None:
-        if self._expected_seq is not None:
-            if seq > self._expected_seq:
-                self.dropped_frames += seq - self._expected_seq
-            elif seq < self._expected_seq:
-                if self._expected_seq - seq <= LATE_FRAMES:
-                    # Arrived after its successor: it was counted as dropped, so take that back.
-                    self.dropped_frames = max(0, self.dropped_frames - 1)
-                    return
-                self.phone_restarts += 1  # the phone app restarted and numbers from 0 again
-        self._expected_seq = seq + 1
+                continue
+            self.watch_messages.note(payload.watch_seq)
+            self._pending += payload.samples
