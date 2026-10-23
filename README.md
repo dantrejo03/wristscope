@@ -41,7 +41,6 @@ To use the real watch, [build the apps](docs/building-the-apps.md), then follow
 | [Getting started](docs/getting-started.md)     | install, run, simulate, use the real watch, test without devices, the 3D view |
 | [Building the apps](docs/building-the-apps.md) | signing and installing the iPhone and watch apps with Xcode                   |
 | [Benchmarking](docs/benchmarking.md)           | record and analyse your own connection benchmarks                             |
-| [Benchmark report](docs/benchmark-report.md)   | the results of the connection benchmark                                       |
 | [Wire format](docs/wire-format.md)             | the bytes sent from the iPhone to the computer                                |
 | [Repository layout](docs/architecture.md)      | what lives where                                                              |
 

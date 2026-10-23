@@ -1,7 +1,7 @@
 # Benchmarking the watch connection
 
-The results of the benchmark are in the [benchmark report](benchmark-report.md). This page
-explains how to record and analyse your own.
+This page explains how to record and analyse a benchmark of the link between the watch and the
+iPhone.
 
 In a debug build of the watch app, Settings › Debug › Benchmark logs what happens to every live
 message: when it was handed to WatchConnectivity, how long the phone took to reply, or why it
@@ -17,9 +17,8 @@ The log also notes the app's CPU time, the battery level and the thermal state e
 which the report shows as `cpu %`, `batt %/h` and `heat`. Take the watch off its charger and run for
 30 minutes or more, since the battery level moves in coarse steps.
 
-To redraw the figures in [benchmark-report.md](benchmark-report.md) (matplotlib comes with
-the `dev` extras):
+To draw figures from the logs (matplotlib comes with the `dev` extras):
 
 ```bash
-python tools/benchmark_plots.py --out docs/figures benchmarks/"Phase 0"/*.json benchmarks/"Phase 1"/*.json
+python tools/benchmark_plots.py --out figures benchmark-*.json
 ```
