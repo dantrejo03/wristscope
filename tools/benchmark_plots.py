@@ -1,11 +1,10 @@
-"""Draws the figures in docs/benchmark-report.md from the benchmark logs the watch sends.
+"""Draws figures from the benchmark logs the watch sends.
 
     pip install matplotlib
-    python tools/benchmark_plots.py --out docs/figures benchmarks/"Phase 0"/*.json benchmarks/"Phase 1"/*.json
+    python tools/benchmark_plots.py --out figures benchmark-*.json
 
 Runs are grouped by flush interval. Each figure is written twice, for light and dark pages
-(round-trips.png and round-trips-dark.png, and so on), and the report shows whichever matches the
-reader's theme. The CPU and battery figure is drawn only when some of the logs have readings in
+(round-trips.png and round-trips-dark.png, and so on). The CPU and battery figure is drawn only when some of the logs have readings in
 them, which logs from before the "resources" event was added don't.
 """
 

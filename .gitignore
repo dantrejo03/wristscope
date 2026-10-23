@@ -44,3 +44,8 @@ Local.xcconfig
 
 # Local git worktrees
 worktrees/
+
+# Raw demo recordings (the finished GIFs live in docs/media/)
+GIF recordings/
+*.MOV
+*.mov
