@@ -58,7 +58,7 @@ extension Workout.Store.Config {
     var flushInterval: TimeInterval {
         switch sessionType {
         // Rep and workout sessions use the live sink until they have their own.
-        case .live, .rep, .workout: 1
+        case .live, .rep, .workout: 0.1
         }
     }
 

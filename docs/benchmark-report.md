@@ -24,8 +24,9 @@ link is.
   mostly per message, not per byte.
 - **Fresh data comes from flushing often.** At 50 ms, a reading is an estimated 87 ms old when it
   reaches the phone. At 1 s it is 612 ms old, and most of that is waiting for the next flush.
-- **Recommendation: keep the 50 ms flush interval** the app now uses, unless its battery cost turns
-  out much higher than at 1 s. *(TODO: confirm with the CPU and battery runs.)*
+- **The app flushes every 100 ms for now.** A reading is about 129 ms old when it reaches the
+  phone, about 40 ms more than at 50 ms, for half as many messages. *(TODO: revisit with the CPU
+  and battery runs.)*
 
 ## Setup
 
@@ -154,12 +155,12 @@ in system processes, which only the battery level reflects.*
 
 ## Recommendation
 
-Keep the 50 ms flush interval. It gives the freshest data, about 87 ms old on arrival, and its round
-trips are no worse than longer intervals. Moving to 100 ms would add about 40 ms of age. Going above
-200 ms would make waiting for the flush most of the delay.
+The app flushes every 100 ms for now. A reading arrives about 129 ms old, about 40 ms more than at
+50 ms, and the watch sends half as many messages. Going above 200 ms would make waiting for the
+flush most of the delay.
 
-*TODO: if the 50 ms run uses clearly more battery per hour than the 1 s run, say so here and whether
-100 ms is the better trade.*
+*TODO: once the CPU and battery results are in, say whether 50 ms is worth twice the messages, or
+whether 100 ms stays.*
 
 ## Limitations
 
