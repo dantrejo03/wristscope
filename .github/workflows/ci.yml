@@ -43,6 +43,13 @@ jobs:
           -scheme Wristscope
           -destination "generic/platform=iOS Simulator"
           CODE_SIGNING_ALLOWED=NO
+      - name: Test the watch app
+        run: >
+          xcodebuild test -quiet
+          -project xcode/Wristscope.xcodeproj
+          -scheme "Wristscope Watch App"
+          -destination "platform=watchOS Simulator,name=Apple Watch Series 11 (46mm),OS=26.5"
+          CODE_SIGNING_ALLOWED=NO
       - name: Check the test fixtures match the Swift formatters
         # The Python tests read these files, so they must be what the Swift code writes today.
         run: |
