@@ -50,6 +50,18 @@ To use the real watch, [build the apps](docs/building-the-apps.md), then follow
 pytest
 ```
 
+The Swift tests cover the watch's formatters: the bytes it sends, its message headers and the
+workout screen's numbers. Run them in Xcode with the Wristscope Watch App scheme (⌘U), or:
+
+```bash
+xcodebuild test -project xcode/Wristscope.xcodeproj -scheme "Wristscope Watch App" \
+    -destination "platform=watchOS Simulator,name=Apple Watch Series 11 (46mm)"
+```
+
+The code around HealthKit, CoreMotion and WatchConnectivity needs a real watch and phone, so it's
+tested by hand. CI also checks that the Swift formatters still write the fixtures the Python tests
+read (`tools/swift_fixtures/generate.sh`).
+
 ## Credits
 
 3D model: ["Smart Watch - Apple"](https://sketchfab.com/3d-models/smart-watch-apple-765c09acb5bc4892be94bb3b37d12000) by James Gorman, on Sketchfab, licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
