@@ -19,13 +19,13 @@ let output = URL(fileURLWithPath: CommandLine.arguments[1], isDirectory: true)
 // One sensor event from each sensor, in the order MotionReadingConversion.swift builds them.
 let events = [
     Motion.Record(timestamp: 1000.25, samples: [
-        .attitude(Vector4(w: 0.5, x: -0.5, y: 0.25, z: -0.25)),
-        .userAcceleration(Vector3(x: 0.125, y: -0.125, z: 1.5)),
-        .rotationRate(Vector3(x: 2.0, y: -2.0, z: 0.75)),
-        .gravity(Vector3(x: 0.0, y: -0.5, z: -1.0)),
+        .attitude(Motion.Vector4(w: 0.5, x: -0.5, y: 0.25, z: -0.25)),
+        .userAcceleration(Motion.Vector3(x: 0.125, y: -0.125, z: 1.5)),
+        .rotationRate(Motion.Vector3(x: 2.0, y: -2.0, z: 0.75)),
+        .gravity(Motion.Vector3(x: 0.0, y: -0.5, z: -1.0)),
     ]),
-    Motion.Record(timestamp: 1000.5, samples: [.rawAcceleration(Vector3(x: 0.1, y: 0.2, z: -0.98))]),
-    Motion.Record(timestamp: 1000.75, samples: [.rawGyro(Vector3(x: -0.3, y: 0.4, z: 0.05))]),
+    Motion.Record(timestamp: 1000.5, samples: [.rawAcceleration(Motion.Vector3(x: 0.1, y: 0.2, z: -0.98))]),
+    Motion.Record(timestamp: 1000.75, samples: [.rawGyro(Motion.Vector3(x: -0.3, y: 0.4, z: 0.05))]),
 ]
 
 // The watch, as `Motion.LiveSink.flush()` sends it.
