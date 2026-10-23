@@ -8,6 +8,7 @@
 import Foundation
 import HealthKit
 import CoreMotion
+import os
 
 
 extension Workout {
@@ -131,7 +132,7 @@ extension Workout {
                         summary = Workout.Summary(kind: kind, builder: builder)
                         _ = try await builder.finishWorkout()
                     } catch {
-
+                        AppLog.workout.error("Saving the workout failed: \(error.localizedDescription)")
                     }
                     // After saving, which gives the last flush time to be logged. Before ending,
                     // while the session still keeps the app running to write the file.
@@ -193,7 +194,7 @@ extension Workout {
                     try await workout.associatedWorkoutBuilder().addWorkoutEvents([marker])
                     markCount += 1
                 } catch {
-
+                    AppLog.workout.error("Saving a marker failed: \(error.localizedDescription)")
                 }
             }
         }
