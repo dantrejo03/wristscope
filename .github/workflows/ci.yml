@@ -1,0 +1,47 @@
+# Runs on every push to main and on every pull request. The badge in README.md shows the result.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  python:
+    name: Python tests (${{ matrix.python }})
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        # The oldest version pyproject.toml allows, and a recent one.
+        python: ["3.11", "3.13"]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: ${{ matrix.python }}
+      - run: pip install -e ".[dev]"
+      - run: pytest
+
+  apps:
+    name: iPhone and watch apps
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v7
+      # Pinned, so the build doesn't change when GitHub updates the runner's default Xcode.
+      - run: sudo xcode-select -s /Applications/Xcode_26.6.app
+      - name: Build both apps for the simulator
+        # No signing: that needs an Apple developer account, and the simulator doesn't check it.
+        run: >
+          xcodebuild build -quiet
+          -project xcode/Wristscope.xcodeproj
+          -scheme Wristscope
+          -destination "generic/platform=iOS Simulator"
+          CODE_SIGNING_ALLOWED=NO
+      - name: Check the test fixtures match the Swift formatters
+        # The Python tests read these files, so they must be what the Swift code writes today.
+        run: |
+          sh tools/swift_fixtures/generate.sh
+          git diff --exit-code tests/fixtures || {
+            echo "::error::tests/fixtures is out of date. Run tools/swift_fixtures/generate.sh and commit the result."
+            exit 1
+          }
