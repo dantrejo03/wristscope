@@ -44,12 +44,18 @@ jobs:
           -destination "generic/platform=iOS Simulator"
           CODE_SIGNING_ALLOWED=NO
       - name: Test the watch app
-        run: >
-          xcodebuild test -quiet
-          -project xcode/Wristscope.xcodeproj
-          -scheme "Wristscope Watch App"
-          -destination "platform=watchOS Simulator,name=Apple Watch Series 11 (46mm),OS=26.5"
-          CODE_SIGNING_ALLOWED=NO
+        # The simulator is picked by its ID: the runner pairs watch simulators with iPhone ones,
+        # so a watch's name alone matches more than one device.
+        run: |
+          watch=$(xcrun simctl list devices available --json \
+            | jq -r '.devices["com.apple.CoreSimulator.SimRuntime.watchOS-26-5"][]
+                     | select(.name == "Apple Watch Series 11 (46mm)") | .udid' | head -1)
+          [ -n "$watch" ] || { echo "::error::No Apple Watch Series 11 (46mm) simulator with watchOS 26.5."; exit 1; }
+          xcodebuild test -quiet \
+            -project xcode/Wristscope.xcodeproj \
+            -scheme "Wristscope Watch App" \
+            -destination "platform=watchOS Simulator,id=$watch" \
+            CODE_SIGNING_ALLOWED=NO
       - name: Check the test fixtures match the Swift formatters
         # The Python tests read these files, so they must be what the Swift code writes today.
         run: |
