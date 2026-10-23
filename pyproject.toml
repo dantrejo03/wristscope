@@ -8,8 +8,16 @@ version = "0.1.0"
 description = "Real-time oscilloscope for Apple Watch CoreMotion data"
 readme = "README.md"
 requires-python = ">=3.11"
-# pyqtgraph is pinned because watch_view.py uses its 0.14 shader interface.
-dependencies = ["numpy", "pyqtgraph>=0.14,<0.15", "PySide6", "PyOpenGL"]
+# pyqtgraph is pinned because watch_view.py uses its 0.14 shader interface. PySide6 6.12.0 drops
+# references to None, which aborts Python before 3.12 ("deallocating None"); 3.12 made None
+# immortal, so later versions are unaffected.
+dependencies = [
+    "numpy",
+    "pyqtgraph>=0.14,<0.15",
+    "PySide6<6.12; python_version < '3.12'",
+    "PySide6; python_version >= '3.12'",
+    "PyOpenGL",
+]
 
 [project.optional-dependencies]
 # trimesh is only needed to rerun tools/convert_watch_model.py, and matplotlib to redraw the
