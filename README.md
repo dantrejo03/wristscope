@@ -1,5 +1,7 @@
 # wristscope
 
+[![CI](https://github.com/dantrejo03/wristscope/actions/workflows/ci.yml/badge.svg)](https://github.com/dantrejo03/wristscope/actions/workflows/ci.yml)
+
 An oscilloscope for Apple Watch CoreMotion data.
 
 <!-- TODO: a 60-second demo video or GIF here: the watch moving and the plot following it. -->
