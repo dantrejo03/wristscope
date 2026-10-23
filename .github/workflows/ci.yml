@@ -11,6 +11,8 @@ jobs:
     name: Python tests (${{ matrix.python }})
     runs-on: ubuntu-latest
     strategy:
+      # Finish every version even when one fails, to see which versions a failure affects.
+      fail-fast: false
       matrix:
         # The oldest version pyproject.toml allows, and a recent one.
         python: ["3.11", "3.13"]
@@ -20,7 +22,11 @@ jobs:
         with:
           python-version: ${{ matrix.python }}
       - run: pip install -e ".[dev]"
-      - run: pytest
+      # -v names each test as it starts, and --capture=sys lets messages from Qt and C code
+      # through, so a crash shows where and why instead of just "Aborted".
+      - run: pytest -v --capture=sys
+        env:
+          PYTHONUNBUFFERED: "1"
 
   apps:
     name: iPhone and watch apps
